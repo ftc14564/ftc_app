@@ -12,7 +12,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
         DcMotor right_back;
         DcMotor left_front;
         DcMotor left_back;
-        DcMotor lift;
+        DcMotor rightArmMotor;
+        DcMotor leftArmMotor;
         float power = 0;
         float track = 0;
         boolean strafing;
@@ -29,7 +30,8 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
             right_back.setDirection(DcMotorSimple.Direction.REVERSE);
             strafing = false;
 
-            lift = hardwareMap.dcMotor.get("lift");
+            rightArmMotor = hardwareMap.dcMotor.get("rightArm");
+            leftArmMotor = hardwareMap.dcMotor.get("leftArm");
 
         }
 
@@ -79,13 +81,13 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
             }
 
             if(gamepad1.right_trigger >0.1) {
-                lift.setPower(gamepad1.right_trigger);
+                rightArmMotor.setPower(gamepad1.right_trigger);
             }
             else if (gamepad1.left_trigger > 0.1) {
-                lift.setPower(-1 * gamepad1.left_trigger);
+                rightArmMotor.setPower(-1 * gamepad1.left_trigger);
             }
             else
-                lift.setPower(0);
+                rightArmMotor.setPower(0);
 
 
 

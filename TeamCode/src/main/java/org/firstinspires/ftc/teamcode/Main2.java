@@ -5,6 +5,8 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.I2cAddr;
+import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -45,7 +47,7 @@ public class Main2 extends OpMode {
     DcMotor rightArm;
     DcMotor leftArm;
 
-    CRServo rightServo;
+    Servo rightServo;
     Servo leftServo;
     double leftpos;
 
@@ -56,8 +58,11 @@ public class Main2 extends OpMode {
     float power = 0;
     float track = 0;
     boolean strafing;
+    boolean initDone=false;
 
     double angleToTurn;
+
+    I2cDeviceSynch pixy;
 
     BNO055IMU imu, imu1;
     Orientation angles, angles1;
@@ -83,15 +88,16 @@ public class Main2 extends OpMode {
      * {@link #vuforia} is the variable we will use to store our instance of the Vuforia
      * localization engine.
      */
-    VuforiaLocalizer vuforia;
+    VuforiaLocalizer vuforia = null;
     VuforiaLocalizer.Parameters Vu_parameters;
 
 
-    Thread initThread = new Thread() {
+    class InitThread implements Runnable{
         @Override
         public void run() {
             try {
 
+                telemetry.addData("Init: Thread start ","");
 
                 BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
                 parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -124,7 +130,8 @@ public class Main2 extends OpMode {
                 Vu_parameters.cameraDirection   = CAMERA_CHOICE;
 
                 //  Instantiate the Vuforia engine
-                vuforia = ClassFactory.getInstance().createVuforia(Vu_parameters);
+                if(vuforia == null)
+                    vuforia = ClassFactory.getInstance().createVuforia(Vu_parameters);
 
                 // Load the data sets that for the trackable objects. These particular data
                 // sets are stored in the 'assets' part of our application.
@@ -253,7 +260,26 @@ public class Main2 extends OpMode {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            pixy = hardwareMap.i2cDeviceSynch.get("pixy");
+
+
+            //setting Pixy's I2C Address
+            pixy.setI2cAddress(I2cAddr.create7bit(0x54));
+
+            I2cDeviceSynch.ReadWindow readWindow = new I2cDeviceSynch.ReadWindow (1, 26,
+                    I2cDeviceSynch.ReadMode.REPEAT);
+            pixy.setReadWindow(readWindow);
+
+            //required to "turn on" the device
+            pixy.engage();
+
+
+            initDone = true;
+            telemetry.addData("Init: Thread done ","");
+
         }
+
     };
 
 
@@ -279,12 +305,13 @@ public class Main2 extends OpMode {
         rightArm = hardwareMap.dcMotor.get("rightArm");
         leftArm = hardwareMap.dcMotor.get("leftArm");
 
-        rightServo = hardwareMap.crservo.get("right_servo");
+        rightServo = hardwareMap.servo.get("right_servo");
         leftServo = hardwareMap.servo.get("left_servo");
 
 
         incrementServo = 0.005;
-        leftpos = 0;
+        leftpos = 0.5;
+        rightServoPos = 0.5;
 
         angleToTurn = 30;
 
@@ -294,7 +321,13 @@ public class Main2 extends OpMode {
         motorRightBack.setPower(driveSpeed);
         motorRightFront.setPower(driveSpeed);
 
+        new Thread(new InitThread()).start();
+
+        //leftServo.setPosition(leftpos);
+        //rightServo.setPosition(rightServoPos);
+
     }
+
 
     public void stopWheels() {
         motorRightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -409,8 +442,6 @@ public class Main2 extends OpMode {
         motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
         motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
-
-        initThread.start();
 
     }
 
@@ -601,7 +632,7 @@ public class Main2 extends OpMode {
             }
         }
 
-
+/*
         if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
             rightServo.setPower(-1 * gamepad1.left_trigger);
         }
@@ -610,80 +641,135 @@ public class Main2 extends OpMode {
         }
         else
             rightServo.setPower(0);
-
-        leftServo.setPosition(leftpos);
-        if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
-            if(leftpos<240)
-                leftpos+=0.005;
-        }
-        else if(gamepad2.left_trigger >0.1) {
-            if(leftpos>=0.005)
-                leftpos-=0.005;
-        }
-
-        /*
-        rightServoPos = rightServo.getPosition();
-        if (gamepad1.left_trigger !=0) {
-
-            rightServoPos-=incrementServo;
-            if (incrementServo > 0.001)
-                incrementServo-=0.001;
-
-            if(rightServoPos<=0)
-                rightServoPos=0;
-
-            rightServo.setPosition(rightServoPos);
-        }
-        else if (gamepad1.left_bumper)
-        {
-            rightServoPos+=rightServoPos;
-            if (incrementServo > 0.001)
-                incrementServo-=0.001;
-
-            if(rightServoPos>=1)
-                rightServoPos=1;
-            rightServo.setPosition(rightServoPos);
-        }
-        else
-            incrementServo = 0.005;
 */
-        targetVisible = false;
-        for (VuforiaTrackable trackable : allTrackables) {
-            if (((VuforiaTrackableDefaultListener)trackable.getListener()).isVisible()) {
-                telemetry.addData("Visible Target", trackable.getName());
-                targetVisible = true;
 
-                // getUpdatedRobotLocation() will return null if no new information is available since
-                // the last time that call was made, or if the trackable is not currently visible.
-                OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener)trackable.getListener()).getUpdatedRobotLocation();
-                if (robotLocationTransform != null) {
-                    lastLocation = robotLocationTransform;
-                }
-                break;
+/*
+        if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
+            leftpos = leftServo.getPosition();
+            if(leftpos<170) {
+                leftpos += 0.005;
+                leftServo.setPosition(leftpos);
             }
         }
-
-        // Provide feedback as to where the robot is located (if we know).
-        if (targetVisible) {
-            // express position (translation) of robot in inches.
-            VectorF translation = lastLocation.getTranslation();
-            telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                    translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
-
-            // express the rotation of the robot in degrees.
-            Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-            telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
+        else if(gamepad2.left_trigger >0.1) {
+            leftpos = leftServo.getPosition();
+            if(leftpos>=0.005) {
+                leftpos -= 0.005;
+                leftServo.setPosition(leftpos);
+            }
         }
-        else {
-            telemetry.addData("Visible Target", "none");
-        }
-        telemetry.update();
+*/
+        telemetry.addData("left pos", leftServo.getPosition());
 
+        if (gamepad2.left_trigger != 0) {
+           // leftpos-=0.005;
+
+         //   if(leftpos<=0.3)
+                leftpos=0.35;
+            leftServo.setPosition(leftpos);
+            telemetry.addData("left pos", leftpos);
+        }
+        if(gamepad2.left_bumper)
+        {
+         //   leftpos+=0.005;
+         //   if(leftpos>=0.6)
+                leftpos=0.55;
+            leftServo.setPosition(leftpos);
+            telemetry.addData("left pos", leftpos);
+        }
+
+        telemetry.addData("right pos", rightServoPos);
+
+        if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
+            if(rightServoPos<0.9)
+                rightServoPos+=0.05;
+            rightServo.setPosition(rightServoPos);
+        }
+        else if(gamepad1.left_trigger >0.1) {
+            if(rightServoPos>=0.05)
+                rightServoPos-=0.05;
+            rightServo.setPosition(rightServoPos);
+        }
+
+
+        if(initDone) {
+
+
+            targetVisible = false;
+            for (VuforiaTrackable trackable : allTrackables) {
+                if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                    telemetry.addData("Visible Target", trackable.getName());
+                    targetVisible = true;
+
+                    // getUpdatedRobotLocation() will return null if no new information is available since
+                    // the last time that call was made, or if the trackable is not currently visible.
+                    OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                    if (robotLocationTransform != null) {
+                        lastLocation = robotLocationTransform;
+                    }
+                    break;
+                }
+            }
+
+            // Provide feedback as to where the robot is located (if we know).
+            if (targetVisible) {
+                // express position (translation) of robot in inches.
+                VectorF translation = lastLocation.getTranslation();
+                telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
+                        translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
+
+                // express the rotation of the robot in degrees.
+                Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
+                telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
+            } else {
+                telemetry.addData("Visible Target", "none");
+            }
+
+
+        /*
+Bytes    16-bit word    Description
+        ----------------------------------------------------------------
+        0, 1     y              sync: 0xaa55=normal object, 0xaa56=color code object
+        2, 3     y              checksum (sum of all 16-bit words 2-6, that is, bytes 4-13)
+        4, 5     y              signature number
+        6, 7     y              x center of object
+        8, 9     y              y center of object
+        10, 11   y              width of object
+        12, 13   y              height of object
+        */
+
+      //  int pixy_x;
+
+      //  pixy_x = (int) pixy.read8(6);
+      //  pixy_x = pixy_x << 8;
+      //  pixy_x = (pixy_x & (0xff00) )| (int) pixy.read8(7);
+
+       // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
+       // telemetry.addData("Pixy_x", pixy_x);
+
+
+        telemetry.addData("Byte 0", pixy.read8(0));
+        telemetry.addData("Byte 1", pixy.read8(1));
+        telemetry.addData("Byte 2", pixy.read8(2));
+        telemetry.addData("Byte 3", pixy.read8(3));
+        telemetry.addData("Byte 4", pixy.read8(4));
+        telemetry.addData("Byte 5", pixy.read8(5));
+        telemetry.addData("Byte 6", pixy.read8(6));
+        telemetry.addData("Byte 7", pixy.read8(7));
+        telemetry.addData("Byte 8", pixy.read8(8));
+        telemetry.addData("Byte 9", pixy.read8(9));
+        telemetry.addData("Byte 10", pixy.read8(10));
+        telemetry.addData("Byte 11", pixy.read8(11));
+        telemetry.addData("Byte 12", pixy.read8(12));
+        telemetry.addData("Byte 13", pixy.read8(13));
 
         telemetry.addData("Right Front Power", motorRightFront.getPower());
         telemetry.addData("Right Back Power", motorRightBack.getPower());
         telemetry.addData("Left Front Power", motorLeftFront.getPower());
         telemetry.addData("Left Back Power", motorLeftBack.getPower());
+
+        }
+        telemetry.update();
 
     }
 }

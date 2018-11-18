@@ -44,8 +44,8 @@ public class Main2 extends OpMode {
     DcMotor motorRightBack;
     DcMotor motorLeftFront;
     DcMotor motorLeftBack;
-    DcMotor rightArm;
-    DcMotor leftArm;
+    DcMotor bottomArm;
+    DcMotor topArm;
 
     Servo rightServo;
     Servo leftServo;
@@ -60,7 +60,12 @@ public class Main2 extends OpMode {
     boolean strafing;
     boolean initDone=false;
 
+    int bottomTarget;
     double angleToTurn;
+    float pos;
+    int ticks;
+    int angle2;
+    boolean run = true;
 
     I2cDeviceSynch pixy;
 
@@ -96,8 +101,14 @@ public class Main2 extends OpMode {
         @Override
         public void run() {
             try {
-
                 telemetry.addData("Init: Thread start ","");
+
+                ArmAngles aa = math(25);
+                String A = "" + aa.A;
+                String B = "" + aa.B;
+                telemetry.addData(A,B);
+
+
 
                 BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
                 parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
@@ -286,6 +297,7 @@ public class Main2 extends OpMode {
     @Override
     public void init() {
 
+
         telemetry.addData("Init: start ","");
 
         motorRightFront = hardwareMap.dcMotor.get("right_front");
@@ -302,11 +314,12 @@ public class Main2 extends OpMode {
         motorLeftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
 
-        rightArm = hardwareMap.dcMotor.get("rightArm");
-        leftArm = hardwareMap.dcMotor.get("leftArm");
+        bottomArm = hardwareMap.dcMotor.get("armBottom");
+        bottomArm.setDirection(DcMotorSimple.Direction.REVERSE);
+        topArm = hardwareMap.dcMotor.get("armTop");
 
-        rightServo = hardwareMap.servo.get("right_servo");
-        leftServo = hardwareMap.servo.get("left_servo");
+        rightServo = hardwareMap.servo.get("grab_servo");
+        leftServo = hardwareMap.servo.get("grab_servo");
 
 
         incrementServo = 0.005;
@@ -589,22 +602,22 @@ public class Main2 extends OpMode {
 
 
         if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
-            rightArm.setPower(-1 * gamepad1.right_trigger);
+            bottomArm.setPower(-1 * gamepad1.right_trigger);
         }
         else if(gamepad1.right_trigger >0.1) {
-            rightArm.setPower(gamepad1.right_trigger);
+            bottomArm.setPower(gamepad1.right_trigger);
         }
         else
-            rightArm.setPower(0);
+            bottomArm.setPower(0);
 
         if (gamepad2.right_bumper && gamepad2.right_trigger > 0.1) {
-            leftArm.setPower(-1 * gamepad2.right_trigger);
+            topArm.setPower(-1 * gamepad2.right_trigger);
         }
         else if(gamepad2.right_trigger >0.1) {
-            leftArm.setPower(gamepad2.right_trigger);
+            topArm.setPower(gamepad2.right_trigger);
         }
         else
-            leftArm.setPower(0);
+            topArm.setPower(0);
 
         if(gamepad1.dpad_up) {
             angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -632,6 +645,36 @@ public class Main2 extends OpMode {
             }
         }
 
+        if(gamepad1.a && run==true && gamepad1.dpad_right){
+            angle2 = 30;
+            ticks = 1120*angle2/360;
+            run = false;
+            bottomTarget = bottomArm.getCurrentPosition() + ticks;
+            bottomArm.setTargetPosition(bottomTarget);
+            pos = bottomArm.getCurrentPosition() + ticks;
+            bottomArm.setPower(0.1);
+            if(bottomArm.getCurrentPosition() == pos){
+                bottomArm.setPower(0);
+            }
+
+        }
+        run = true;
+
+        if(gamepad1.a && run==true && gamepad1.dpad_left){
+            angle2 = 30;
+            ticks = 1120*angle2/360;
+            run = false;
+            bottomTarget = bottomArm.getCurrentPosition() + ticks;
+            bottomArm.setTargetPosition(bottomTarget);
+            pos = bottomArm.getCurrentPosition() + ticks;
+            bottomArm.setPower(-0.1);
+            if(bottomArm.getCurrentPosition() == pos){
+                bottomArm.setPower(0);
+            }
+
+        }
+
+        run = true;
 /*
         if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
             rightServo.setPower(-1 * gamepad1.left_trigger);
@@ -770,6 +813,32 @@ Bytes    16-bit word    Description
 
         }
         telemetry.update();
+
+    }
+
+    class ArmAngles {
+        double A;
+        double B;
+    }
+    public ArmAngles math (float y){
+
+        ArmAngles returnAngles = new ArmAngles();
+
+        double x;
+        double A;
+        double B;
+        double D;
+        double combined;
+
+        x = Math.sqrt(y*y + 30.25);
+        D = Math.acos(y/x);
+        B = Math.acos((x*x +608)/84*x);
+        A = Math.acos((-1*x*x +2920)/2856);
+        combined = B + D;
+        returnAngles.A = A;
+        returnAngles.B = combined;
+
+        return returnAngles;
 
     }
 }

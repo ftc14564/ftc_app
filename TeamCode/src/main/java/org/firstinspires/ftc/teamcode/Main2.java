@@ -1,10 +1,17 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.app.Activity;
+import android.graphics.Color;
+import android.view.View;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -18,6 +25,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
@@ -39,6 +47,8 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+
 
 
 @TeleOp (name = "TeleOp Drive Main2")
@@ -53,6 +63,21 @@ public class Main2 extends OpMode {
 
     Servo grabServo;
     double grabpos;
+
+    private DistanceSensor sensorRange;
+    Rev2mDistanceSensor distanceSensor;
+
+    private ColorSensor colorSensor;
+    private DistanceSensor colorDistance;
+    float hsvValues[] = {0F, 0F, 0F};
+
+    // values is a reference to the hsvValues array.
+    final float values[] = hsvValues;
+
+    // sometimes it helps to multiply the raw RGB values with a scale factor
+    // to amplify/attentuate the measured values.
+    final double SCALE_FACTOR = 255;
+
 
 
 
@@ -332,6 +357,12 @@ public class Main2 extends OpMode {
         //leftServo.setPosition(leftpos);
         //rightServo.setPosition(rightServoPos);
 
+        sensorRange = hardwareMap.get(DistanceSensor.class, "2m_1");
+        distanceSensor = (Rev2mDistanceSensor)sensorRange;
+        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
+        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
+
+
     }
 
 
@@ -551,6 +582,21 @@ public class Main2 extends OpMode {
         float right_x = gamepad1.right_stick_x;
         float left_Y = gamepad1.left_stick_y;
 
+
+        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
+        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
+                (int) (colorSensor.green() * SCALE_FACTOR),
+                (int) (colorSensor.blue() * SCALE_FACTOR),
+                hsvValues);
+
+        // send the info back to driver station using telemetry function.
+        telemetry.addData("Distance (cm)",
+                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
+        telemetry.addData("Alpha", colorSensor.alpha());
+        telemetry.addData("Red  ", colorSensor.red());
+        telemetry.addData("Green", colorSensor.green());
+        telemetry.addData("Blue ", colorSensor.blue());
+        telemetry.addData("Hue", hsvValues[0]);
 
 
         if(gamepad1.dpad_right == true) {

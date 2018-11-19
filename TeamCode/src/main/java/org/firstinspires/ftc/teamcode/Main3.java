@@ -1,23 +1,21 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.app.Activity;
 import android.graphics.Color;
 import android.os.Process;
-import android.view.View;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -48,12 +46,10 @@ import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
-import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 
 
-
-@TeleOp (name = "TeleOp Drive Main2")
-public class Main2 extends OpMode {
+@TeleOp (name = "TeleOp Drive Main3")
+public class Main3 extends LinearOpMode {
 
     DcMotor motorRightFront;
     DcMotor motorRightBack;
@@ -122,7 +118,7 @@ public class Main2 extends OpMode {
     class TestThread implements Runnable{
         @Override
         public void run() {
-            android.os.Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
+            Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
 
             try {
                 strafe(1,1,2406);
@@ -346,8 +342,7 @@ public class Main2 extends OpMode {
 
 
 
-    @Override
-    public void init() {
+    public void initFn() {
 
         telemetry.addData("Init: start ","");
 
@@ -658,39 +653,39 @@ public class Main2 extends OpMode {
             }*/
             telemetry.addData("Position", motorLeftFront.getCurrentPosition());
             telemetry.update();
-            motorLeftFront.setPower(direction*.2*power);
-            motorRightBack.setPower(direction*.2*power);
-            motorRightFront.setPower(direction*.2*power);
-            motorLeftBack.setPower(direction*.2*power);
+            motorLeftFront.setPower(direction*.3*power);
+            motorRightBack.setPower(direction*.3*power);
+            motorRightFront.setPower(direction*.3*power);
+            motorLeftBack.setPower(direction*.3*power);
             if (Math.abs(motorLeftFront.getCurrentPosition()) < .05 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*power);
                 motorRightBack.setPower(direction*power);
                 motorRightFront.setPower(direction*power);
                 motorLeftBack.setPower(direction*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .3 * Math.abs(distance)) {
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .5 * Math.abs(distance)) {
+                motorLeftFront.setPower(direction*.8*power);
+                motorRightBack.setPower(direction*.8*power);
+                motorRightFront.setPower(direction*.8*power);
+                motorLeftBack.setPower(direction*.8*power);
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.65*power);
+                motorRightBack.setPower(direction*.65*power);
+                motorRightFront.setPower(direction*.65*power);
+                motorLeftBack.setPower(direction*.65*power);
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .8 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.6*power);
                 motorRightBack.setPower(direction*.6*power);
                 motorRightFront.setPower(direction*.6*power);
                 motorLeftBack.setPower(direction*.6*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.55*power);
-                motorRightBack.setPower(direction*.55*power);
-                motorRightFront.setPower(direction*.55*power);
-                motorLeftBack.setPower(direction*.55*power);
-            }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .7 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.5*power);
-                motorRightBack.setPower(direction*.5*power);
-                motorRightFront.setPower(direction*.5*power);
-                motorLeftBack.setPower(direction*.5*power);
-            }
             else{
-                motorLeftFront.setPower(direction*.2*power);
-                motorRightBack.setPower(direction*.2*power);
-                motorRightFront.setPower(direction*.2*power);
-                motorLeftBack.setPower(direction*.2*power);
+                motorLeftFront.setPower(direction*.4*power);
+                motorRightBack.setPower(direction*.4*power);
+                motorRightFront.setPower(direction*.4*power);
+                motorLeftBack.setPower(direction*.4*power);
             }
         }
         stopWheels();
@@ -714,149 +709,163 @@ public class Main2 extends OpMode {
 
 
     @Override
-    public void loop() {
+    public void runOpMode() {
 
-        float right_x = gamepad1.right_stick_x;
-        float left_Y = gamepad1.left_stick_y;
+        initFn();
 
-
-        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
-        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
-                (int) (colorSensor.green() * SCALE_FACTOR),
-                (int) (colorSensor.blue() * SCALE_FACTOR),
-                hsvValues);
-
-        // send the info back to driver station using telemetry function.
-        telemetry.addData("Distance (cm)",
-                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
-        telemetry.addData("Alpha", colorSensor.alpha());
-        telemetry.addData("Red  ", colorSensor.red());
-        telemetry.addData("Green", colorSensor.green());
-        telemetry.addData("Blue ", colorSensor.blue());
-        telemetry.addData("Hue", hsvValues[0]);
+        waitForStart();
 
 
-        if(gamepad1.dpad_right == true) {
-            if (!strafing) {
-                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-                strafing = true;
+        // run until the end of the match (driver presses STOP)
+        while (opModeIsActive()) {
+
+
+            float right_x = gamepad1.right_stick_x;
+            float left_Y = gamepad1.left_stick_y;
+
+
+            telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
+            Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
+                    (int) (colorSensor.green() * SCALE_FACTOR),
+                    (int) (colorSensor.blue() * SCALE_FACTOR),
+                    hsvValues);
+
+            // send the info back to driver station using telemetry function.
+            telemetry.addData("Distance (cm)",
+                    String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
+            telemetry.addData("Alpha", colorSensor.alpha());
+            telemetry.addData("Red  ", colorSensor.red());
+            telemetry.addData("Green", colorSensor.green());
+            telemetry.addData("Blue ", colorSensor.blue());
+            telemetry.addData("Hue", hsvValues[0]);
+
+
+            if (gamepad1.dpad_right == true) {
+                if (!strafing) {
+                    motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+                    motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+                    strafing = true;
+                }
+            } else {
+                if (strafing) {
+                    motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+                    motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+                    strafing = false;
+                }
             }
-        }
-        else {
-            if(strafing) {
-                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-                strafing = false;
+
+
+            if (right_x < 0) {
+                power = 1 + right_x;
+                motorRightFront.setPower(left_Y);
+                motorRightBack.setPower(left_Y);
+                motorLeftFront.setPower(-left_Y);
+                motorLeftBack.setPower(-left_Y);
+            } else if (right_x > 0) {
+                power = 1 - right_x;
+                motorRightFront.setPower(-left_Y);
+                motorRightBack.setPower(-left_Y);
+                motorLeftFront.setPower(left_Y);
+                motorLeftBack.setPower(left_Y);
+            } else {
+                motorRightFront.setPower(left_Y);
+                motorRightBack.setPower(left_Y);
+                motorLeftFront.setPower(left_Y);
+                motorLeftBack.setPower(left_Y);
             }
-        }
 
 
+            if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
+                //armBottom.setPower(-1 * gamepad1.right_trigger);
+                try {
+                    turnTopArm(1, 1, 100);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else if (gamepad1.right_trigger > 0.1) {
+                //armBottom.setPower(gamepad1.right_trigger);
+                try {
+                    turnTopArm(0.8, -1, 100);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
 
-        if (right_x < 0) {
-            power = 1+right_x;
-            motorRightFront.setPower(left_Y);
-            motorRightBack.setPower(left_Y);
-            motorLeftFront.setPower(-left_Y);
-            motorLeftBack.setPower(-left_Y );
-        }
-
-        else if (right_x > 0) {
-            power = 1 - right_x;
-            motorRightFront.setPower(-left_Y);
-            motorRightBack.setPower(-left_Y);
-            motorLeftFront.setPower(left_Y);
-            motorLeftBack.setPower(left_Y);
-        }
-
-        else{
-            motorRightFront.setPower(left_Y);
-            motorRightBack.setPower(left_Y );
-            motorLeftFront.setPower(left_Y);
-            motorLeftBack.setPower(left_Y);
-        }
-
-
-        if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
-            //armBottom.setPower(-1 * gamepad1.right_trigger);
-            try {
-                turnTopArm(1, 1, 100);
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
-        else if(gamepad1.right_trigger >0.1) {
-            //armBottom.setPower(gamepad1.right_trigger);
-            try {
-                turnTopArm(0.8, -1, 100);
-            } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        }
 //        else
 //            armTop.setPower(0);
 
-        if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
-            //armTop.setPower(-1 * gamepad1.right_trigger);
-            try {
+            if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
+                //armTop.setPower(-1 * gamepad1.right_trigger);
+                try {
 
-                turnBottomArm(0.8, 1, 300);
-            }
-            catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-        else if(gamepad1.left_trigger >0.1) {
-            //armTop.setPower(gamepad1.right_trigger);
-            try {
+                    turnBottomArm(0.8, 1, 300);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else if (gamepad1.left_trigger > 0.1) {
+                //armTop.setPower(gamepad1.right_trigger);
+                try {
 
-                turnBottomArm(0.8, -1, 300);
-            }
-            catch(Exception e){
-                e.printStackTrace();
-            }
-        }
-        else
-            armBottom.setPower(0);
+                    turnBottomArm(0.8, -1, 300);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            } else
+                armBottom.setPower(0);
 
-        if(gamepad1.dpad_up) {
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angleToTurn = 30 + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
-            OLDrotate(0.8, 1, angleToTurn);
-        }
-        if(gamepad1.dpad_down) {
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angleToTurn =  Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) + 30;
-            OLDrotate(0.8, -1, angleToTurn);
-        }
-
-        if(gamepad1.y) {
-            try {
-                strafe(1, 1, 1604);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (gamepad1.dpad_up) {
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                angleToTurn = 30 + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
+                OLDrotate(0.8, 1, angleToTurn);
             }
-        }
-        if(gamepad1.x) {
-            try {
-                strafe(1, -1, 1604);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if(gamepad2.x){
-            try {
-
-                new Thread(new TestThread()).start();
-
-            }
-            catch(Exception e){
-                e.printStackTrace();
+            if (gamepad1.dpad_down) {
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+                angleToTurn = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) + 30;
+                OLDrotate(0.8, -1, angleToTurn);
             }
 
-        }
+            if (gamepad1.y) {
+                try {
+                    strafe(1, 1, 1604);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (gamepad1.x) {
+                try {
+                    strafe(1, -1, 1604);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            if (gamepad2.x) {
+                try {
+
+//                new Thread(new TestThread()).start();
+                    strafe(1, 1, 2793);  //14 inch = 133 * 13 (3/2)
+                    OLDrotate(1, -1, 90);
+                    //left 2 in
+                    telemetry.addData("Debug", "0");
+
+                    strafe(1, -1, 401);
+                    telemetry.addData("Debug", "1");
+
+                    //    sleep(2000);
+                    //right 18 in
+                    strafe(1, 1, 3352);
+                    telemetry.addData("Debug", "2");
+
+                    //left 36 in
+                    //    sleep(2000);
+
+                    strafe(1, -1, 6704);
+                    telemetry.addData("Debug", "3");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            }
 //        if(gamepad1.y){
 //            turnBottomArm_E(5);
 //        }
@@ -891,59 +900,57 @@ public class Main2 extends OpMode {
             }
         }
 */
-        telemetry.addData("grab pos", grabServo.getPosition());
+            telemetry.addData("grab pos", grabServo.getPosition());
 
-        if (gamepad2.left_trigger != 0) {
-           // leftpos-=0.005;
+            if (gamepad2.left_trigger != 0) {
+                // leftpos-=0.005;
 
-         //   if(leftpos<=0.3)
-                grabpos=0.35;
-            grabServo.setPosition(grabpos);
-            telemetry.addData("grab pos", grabpos);
-        }
-        if(gamepad2.left_bumper)
-        {
-         //   leftpos+=0.005;
-         //   if(leftpos>=0.6)
-                grabpos=0.7;
-            grabServo.setPosition(grabpos);
-            telemetry.addData("grab pos", grabpos);
-        }
-
+                //   if(leftpos<=0.3)
+                grabpos = 0.35;
+                grabServo.setPosition(grabpos);
+                telemetry.addData("grab pos", grabpos);
+            }
+            if (gamepad2.left_bumper) {
+                //   leftpos+=0.005;
+                //   if(leftpos>=0.6)
+                grabpos = 0.7;
+                grabServo.setPosition(grabpos);
+                telemetry.addData("grab pos", grabpos);
+            }
 
 
-        if(initDone) {
+            if (initDone) {
 
 
-            targetVisible = false;
-            for (VuforiaTrackable trackable : allTrackables) {
-                if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
-                    telemetry.addData("Visible Target", trackable.getName());
-                    targetVisible = true;
+                targetVisible = false;
+                for (VuforiaTrackable trackable : allTrackables) {
+                    if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                        telemetry.addData("Visible Target", trackable.getName());
+                        targetVisible = true;
 
-                    // getUpdatedRobotLocation() will return null if no new information is available since
-                    // the last time that call was made, or if the trackable is not currently visible.
-                    OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-                    if (robotLocationTransform != null) {
-                        lastLocation = robotLocationTransform;
+                        // getUpdatedRobotLocation() will return null if no new information is available since
+                        // the last time that call was made, or if the trackable is not currently visible.
+                        OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                        if (robotLocationTransform != null) {
+                            lastLocation = robotLocationTransform;
+                        }
+                        break;
                     }
-                    break;
                 }
-            }
 
-            // Provide feedback as to where the robot is located (if we know).
-            if (targetVisible) {
-                // express position (translation) of robot in inches.
-                VectorF translation = lastLocation.getTranslation();
-                telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                        translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
+                // Provide feedback as to where the robot is located (if we know).
+                if (targetVisible) {
+                    // express position (translation) of robot in inches.
+                    VectorF translation = lastLocation.getTranslation();
+                    telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
+                            translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
 
-                // express the rotation of the robot in degrees.
-                Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-                telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
-            } else {
-                telemetry.addData("Visible Target", "none");
-            }
+                    // express the rotation of the robot in degrees.
+                    Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
+                    telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
+                } else {
+                    telemetry.addData("Visible Target", "none");
+                }
 
 
         /*
@@ -958,38 +965,39 @@ Bytes    16-bit word    Description
         12, 13   y              height of object
         */
 
-      //  int pixy_x;
+                //  int pixy_x;
 
-      //  pixy_x = (int) pixy.read8(6);
-      //  pixy_x = pixy_x << 8;
-      //  pixy_x = (pixy_x & (0xff00) )| (int) pixy.read8(7);
+                //  pixy_x = (int) pixy.read8(6);
+                //  pixy_x = pixy_x << 8;
+                //  pixy_x = (pixy_x & (0xff00) )| (int) pixy.read8(7);
 
-       // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
-       // telemetry.addData("Pixy_x", pixy_x);
+                // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
+                // telemetry.addData("Pixy_x", pixy_x);
 
 
-        telemetry.addData("Byte 0", pixy.read8(0));
-        telemetry.addData("Byte 1", pixy.read8(1));
-        telemetry.addData("Byte 2", pixy.read8(2));
-        telemetry.addData("Byte 3", pixy.read8(3));
-        telemetry.addData("Byte 4", pixy.read8(4));
-        telemetry.addData("Byte 5", pixy.read8(5));
-        telemetry.addData("Byte 6", pixy.read8(6));
-        telemetry.addData("Byte 7", pixy.read8(7));
-        telemetry.addData("Byte 8", pixy.read8(8));
-        telemetry.addData("Byte 9", pixy.read8(9));
-        telemetry.addData("Byte 10", pixy.read8(10));
-        telemetry.addData("Byte 11", pixy.read8(11));
-        telemetry.addData("Byte 12", pixy.read8(12));
-        telemetry.addData("Byte 13", pixy.read8(13));
+                telemetry.addData("Byte 0", pixy.read8(0));
+                telemetry.addData("Byte 1", pixy.read8(1));
+                telemetry.addData("Byte 2", pixy.read8(2));
+                telemetry.addData("Byte 3", pixy.read8(3));
+                telemetry.addData("Byte 4", pixy.read8(4));
+                telemetry.addData("Byte 5", pixy.read8(5));
+                telemetry.addData("Byte 6", pixy.read8(6));
+                telemetry.addData("Byte 7", pixy.read8(7));
+                telemetry.addData("Byte 8", pixy.read8(8));
+                telemetry.addData("Byte 9", pixy.read8(9));
+                telemetry.addData("Byte 10", pixy.read8(10));
+                telemetry.addData("Byte 11", pixy.read8(11));
+                telemetry.addData("Byte 12", pixy.read8(12));
+                telemetry.addData("Byte 13", pixy.read8(13));
 
-        telemetry.addData("Right Front Power", motorRightFront.getPower());
-        telemetry.addData("Right Back Power", motorRightBack.getPower());
-        telemetry.addData("Left Front Power", motorLeftFront.getPower());
-        telemetry.addData("Left Back Power", motorLeftBack.getPower());
+                telemetry.addData("Right Front Power", motorRightFront.getPower());
+                telemetry.addData("Right Back Power", motorRightBack.getPower());
+                telemetry.addData("Left Front Power", motorLeftFront.getPower());
+                telemetry.addData("Left Back Power", motorLeftBack.getPower());
 
+            }
+            telemetry.update();
         }
-        telemetry.update();
 
     }
     public void turnTopArm_E(int degrees){

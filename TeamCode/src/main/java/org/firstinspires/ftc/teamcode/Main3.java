@@ -711,6 +711,8 @@ public class Main3 extends LinearOpMode {
     @Override
     public void runOpMode() {
 
+        int pixyCounter=0;
+        boolean isPixyObjectSeen = false;
         initFn();
 
         waitForStart();
@@ -843,7 +845,7 @@ public class Main3 extends LinearOpMode {
                 try {
 
 //                new Thread(new TestThread()).start();
-                    strafe(1, 1, 2793);  //14 inch = 133 * 13 (3/2)
+                    strafe(1, 1, 2793);  //14 inch = 133 * 14 (3/2)
                     OLDrotate(1, -1, 90);
                     //left 2 in
                     telemetry.addData("Debug", "0");
@@ -851,16 +853,27 @@ public class Main3 extends LinearOpMode {
                     strafe(1, -1, 401);
                     telemetry.addData("Debug", "1");
 
-                    //    sleep(2000);
-                    //right 18 in
-                    strafe(1, 1, 3352);
-                    telemetry.addData("Debug", "2");
+                    if(isPixyObjectSeen) {
+                        straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                        telemetry.addData("Debug", "object seen");
+                    }
+                    else {
 
-                    //left 36 in
-                    //    sleep(2000);
+                        //right 16.5 in
+                        strafe(1, 1, 3352);
+                        telemetry.addData("Debug", "2");
+                        if (isPixyObjectSeen)
+                            straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                        else {
+                            //left 33 in
 
-                    strafe(1, -1, 6704);
-                    telemetry.addData("Debug", "3");
+                            strafe(1, -1, 6704);
+                            straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+
+                            telemetry.addData("Debug", "3");
+                        }
+                    }
+
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
@@ -973,15 +986,49 @@ Bytes    16-bit word    Description
 
                 // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
                 // telemetry.addData("Pixy_x", pixy_x);
+        // https://docs.pixycam.com/wiki/doku.php?id=wiki:v2:protocol_reference
+                //getBlocks
+
+                pixy.write8(0,173);
+                pixy.write8(1,193);
+                pixy.write8(2,32);
+                pixy.write8(3,2);
+                pixy.write8(4,1);
+                pixy.write8(5,1);
+
+                byte b = pixy.read8(0);
+                telemetry.addData("Byte 0", b);
+                b = pixy.read8(1);
+                telemetry.addData("Byte 1", b);
+                b = pixy.read8(2);
+                telemetry.addData("Byte 2",b );
+                b = pixy.read8(3);
+                telemetry.addData("Byte 3", b);
+                b = pixy.read8(4);
+                telemetry.addData("Byte 4", b);
+                b = pixy.read8(5);
+                telemetry.addData("Byte 5", b);
+                b = pixy.read8(6);
+                telemetry.addData("Byte 6", b);
+
+                if (b!=0){
+                    if(pixyCounter < 5)
+                        pixyCounter++;
+                }
+                else{
+                    if(pixyCounter>0)
+                        pixyCounter--;
+                }
+
+                if(pixyCounter >3){
+                    isPixyObjectSeen = true;
+                }
+                else {
+                    isPixyObjectSeen = false;
+                }
 
 
-                telemetry.addData("Byte 0", pixy.read8(0));
-                telemetry.addData("Byte 1", pixy.read8(1));
-                telemetry.addData("Byte 2", pixy.read8(2));
-                telemetry.addData("Byte 3", pixy.read8(3));
-                telemetry.addData("Byte 4", pixy.read8(4));
-                telemetry.addData("Byte 5", pixy.read8(5));
-                telemetry.addData("Byte 6", pixy.read8(6));
+
                 telemetry.addData("Byte 7", pixy.read8(7));
                 telemetry.addData("Byte 8", pixy.read8(8));
                 telemetry.addData("Byte 9", pixy.read8(9));
@@ -989,6 +1036,14 @@ Bytes    16-bit word    Description
                 telemetry.addData("Byte 11", pixy.read8(11));
                 telemetry.addData("Byte 12", pixy.read8(12));
                 telemetry.addData("Byte 13", pixy.read8(13));
+              //  telemetry.addData("Byte 14", pixy.read8(14));
+              //  telemetry.addData("Byte 15", pixy.read8(15));
+              //  telemetry.addData("Byte 16", pixy.read8(16));
+              //  telemetry.addData("Byte 17", pixy.read8(17));
+                //telemetry.addData("Byte 18", pixy.read8(18));
+                //telemetry.addData("Byte 19", pixy.read8(19));
+                //telemetry.addData("Byte 20", pixy.read8(20));
+                //telemetry.addData("Byte 21", pixy.read8(21));
 
                 telemetry.addData("Right Front Power", motorRightFront.getPower());
                 telemetry.addData("Right Back Power", motorRightBack.getPower());

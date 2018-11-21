@@ -6,8 +6,8 @@ import android.os.Process;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static android.os.SystemClock.sleep;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_TO_POSITION;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
@@ -48,8 +47,8 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@TeleOp (name = "TeleOp Drive Main3")
-public class Main3 extends LinearOpMode {
+@Autonomous(name = "Main Autonomous")
+public class MainAutonomous extends LinearOpMode {
 
     DcMotor motorRightFront;
     DcMotor motorRightBack;
@@ -317,6 +316,7 @@ public class Main3 extends LinearOpMode {
 
                 targetsRoverRuckus.activate();
 
+                initDone=true;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -816,10 +816,6 @@ Bytes    16-bit word    Description
         while (opModeIsActive()) {
 
 
-            float right_x = gamepad1.right_stick_x;
-            float left_Y = gamepad1.left_stick_y;
-
-
             telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
             Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
                     (int) (colorSensor.green() * SCALE_FACTOR),
@@ -836,106 +832,16 @@ Bytes    16-bit word    Description
             telemetry.addData("Hue", hsvValues[0]);
 
 
-            if (gamepad1.dpad_right == true) {
-                if (!strafing) {
-                    motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                    motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-                    strafing = true;
-                }
-            } else {
-                if (strafing) {
-                    motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-                    motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-                    strafing = false;
-                }
-            }
 
 
-            if (right_x < 0) {
-                power = 1 + right_x;
-                motorRightFront.setPower(left_Y);
-                motorRightBack.setPower(left_Y);
-                motorLeftFront.setPower(-left_Y);
-                motorLeftBack.setPower(-left_Y);
-            } else if (right_x > 0) {
-                power = 1 - right_x;
-                motorRightFront.setPower(-left_Y);
-                motorRightBack.setPower(-left_Y);
-                motorLeftFront.setPower(left_Y);
-                motorLeftBack.setPower(left_Y);
-            } else {
-                motorRightFront.setPower(left_Y);
-                motorRightBack.setPower(left_Y);
-                motorLeftFront.setPower(left_Y);
-                motorLeftBack.setPower(left_Y);
-            }
 
 
-            if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
-                //armBottom.setPower(-1 * gamepad1.right_trigger);
-                try {
-                    turnTopArm(1, 1, 100);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else if (gamepad1.right_trigger > 0.1) {
-                //armBottom.setPower(gamepad1.right_trigger);
-                try {
-                    turnTopArm(0.8, -1, 100);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
 
-            }
-//        else
-//            armTop.setPower(0);
 
-            if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
-                //armTop.setPower(-1 * gamepad1.right_trigger);
-                try {
 
-                    turnBottomArm(0.8, 1, 300);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else if (gamepad1.left_trigger > 0.1) {
-                //armTop.setPower(gamepad1.right_trigger);
-                try {
 
-                    turnBottomArm(0.8, -1, 300);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            } else
-                armBottom.setPower(0);
 
-            if (gamepad1.dpad_up) {
-                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                angleToTurn = 30 + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
-                OLDrotate(0.8, 1, angleToTurn);
-            }
-            if (gamepad1.dpad_down) {
-                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                angleToTurn = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) + 30;
-                OLDrotate(0.8, -1, angleToTurn);
-            }
 
-            if (gamepad1.y) {
-                try {
-                    strafe(1, 1, 1604);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            if (gamepad1.x) {
-                try {
-                    strafe(1, -1, 1604);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            if (gamepad2.x) {
                 try {
 
 //                new Thread(new TestThread()).start();
@@ -971,59 +877,6 @@ Bytes    16-bit word    Description
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-
-            }
-//        if(gamepad1.y){
-//            turnBottomArm_E(5);
-//        }
-//        if(gamepad1.b){
-//            turnTopArm_E(5);
-//        }
-
-/*
-        if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
-            rightServo.setPower(-1 * gamepad1.left_trigger);
-        }
-        else if(gamepad1.left_trigger >0.1) {
-            rightServo.setPower(gamepad1.left_trigger);
-        }
-        else
-            rightServo.setPower(0);
-*/
-
-/*
-        if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
-            leftpos = leftServo.getPosition();
-            if(leftpos<170) {
-                leftpos += 0.005;
-                leftServo.setPosition(leftpos);
-            }
-        }
-        else if(gamepad2.left_trigger >0.1) {
-            leftpos = leftServo.getPosition();
-            if(leftpos>=0.005) {
-                leftpos -= 0.005;
-                leftServo.setPosition(leftpos);
-            }
-        }
-*/
-            telemetry.addData("grab pos", grabServo.getPosition());
-
-            if (gamepad2.left_trigger != 0) {
-                // leftpos-=0.005;
-
-                //   if(leftpos<=0.3)
-                grabpos = 0.35;
-                grabServo.setPosition(grabpos);
-                telemetry.addData("grab pos", grabpos);
-            }
-            if (gamepad2.left_bumper) {
-                //   leftpos+=0.005;
-                //   if(leftpos>=0.6)
-                grabpos = 0.7;
-                grabServo.setPosition(grabpos);
-                telemetry.addData("grab pos", grabpos);
-            }
 
 
             if (initDone) {

@@ -46,7 +46,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@TeleOp (name = "TeleOp MainTeleop")
+@TeleOp (name = "Main_Teleop")
 public class MainTeleop extends LinearOpMode {
 
     DcMotor motorRightFront;
@@ -92,6 +92,8 @@ public class MainTeleop extends LinearOpMode {
         motorRightBack = hardwareMap.dcMotor.get("right_back");
         motorLeftFront = hardwareMap.dcMotor.get("left_front");
         motorLeftBack = hardwareMap.dcMotor.get("left_back");
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
         motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
         strafing = false;
@@ -471,32 +473,35 @@ public class MainTeleop extends LinearOpMode {
 
             if (Math.abs(sideways) > 0.1) {
                 //strafe
-                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+                motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);  //default
+                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);  //changed for strafe
+                motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);  //default
+                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed for strafe
+
                 motorRightFront.setPower(-1*sideways);
                 motorRightBack.setPower(-1*sideways);
                 motorLeftFront.setPower(-1*sideways);
                 motorLeftBack.setPower(-1*sideways);
             }
             else
-            if (gamepad1.right_bumper && forward > 0.1) {
+            if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
                 //right turn
-                motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+                motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);  //chnaged
+                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
+                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE); //default
+                motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);  //default
                 motorRightFront.setPower(forward);
                 motorRightBack.setPower(forward);
                 motorLeftFront.setPower(forward);
                 motorLeftBack.setPower(forward);
             }
             else
-            if (gamepad1.left_bumper && forward < 0.1) {
+            if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
                 //left turn
-                motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);  //default
+                motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);  //default
+                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed
+                motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);  //changed
                 motorRightFront.setPower(forward);
                 motorRightBack.setPower(forward);
                 motorLeftFront.setPower(forward);
@@ -505,8 +510,10 @@ public class MainTeleop extends LinearOpMode {
             else
             if (Math.abs(forward) > 0.1) {
                 //forward
-                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+                motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorRightFront.setPower(forward);
                 motorRightBack.setPower(forward);
                 motorLeftFront.setPower(forward);
@@ -514,8 +521,10 @@ public class MainTeleop extends LinearOpMode {
             }
             else
             {
-                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+                motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorRightFront.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 motorRightFront.setPower(0);
                 motorRightBack.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -592,9 +601,9 @@ public class MainTeleop extends LinearOpMode {
             if (gamepad2.dpad_right) {
                 try {
                     turnTopArm(0.7, -1, 2*1440 * 70 / 360);
-                    turnBottomArm(0.4, -1, 3 * 1440 * 60 / (360));
+                    turnBottomArm(0.4, -1, 3 * 1440 * 70 / (360));
                     turnTopArm(0.5, -1, 2*1440 * 40 / 360);
-                    turnBottomArm(0.3, -1, 3 * 1440 * 50 / (360));
+                    turnBottomArm(0.4, -1, 3 * 1440 * 40 / (360));
                 }
                 catch (Exception e){
                     e.printStackTrace();
@@ -603,10 +612,10 @@ public class MainTeleop extends LinearOpMode {
             }
             if (gamepad2.dpad_up) {
                 try {
-                    armTop.setDirection(DcMotorSimple.Direction.REVERSE);
-                    armTop.setPower(-0.2);
+                    turnTopArm(0.7, -1, 2*1440 * 20 / 360);
                     turnBottomArm(0.8, 1, 3 * 1440 * 95 / (360));
-                    
+                    turnTopArm(0.7, -1, 2*1440 * 10 / 360);
+
                 }
                 catch (Exception e){
                     e.printStackTrace();

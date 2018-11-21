@@ -47,7 +47,7 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@Autonomous(name = "Main Autonomous")
+@Autonomous(name = "Main_Auto")
 public class MainAutonomous extends LinearOpMode {
 
     DcMotor motorRightFront;

@@ -54,10 +54,7 @@ public class MainAutonomous extends LinearOpMode {
     DcMotor motorRightBack;
     DcMotor motorLeftFront;
     DcMotor motorLeftBack;
-<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
-    DcMotor bottomArm;
-    DcMotor topArm;
-=======
+
     DcMotor armBottom;
     DcMotor armTop;
 
@@ -82,7 +79,6 @@ public class MainAutonomous extends LinearOpMode {
     boolean isPixyObjectSeen;
     boolean opModeActive;
 
->>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 
 
 
@@ -471,14 +467,7 @@ Bytes    16-bit word    Description
 
 
 
-<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
-        bottomArm = hardwareMap.dcMotor.get("armBottom");
-        bottomArm.setDirection(DcMotorSimple.Direction.REVERSE);
-        topArm = hardwareMap.dcMotor.get("armTop");
 
-        rightServo = hardwareMap.servo.get("grab_servo");
-        leftServo = hardwareMap.servo.get("grab_servo");
-=======
         armBottom = hardwareMap.dcMotor.get("armBottom");
         armTop = hardwareMap.dcMotor.get("armTop");
         armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -487,7 +476,6 @@ Bytes    16-bit word    Description
         armBottom.setMode(RUN_WITHOUT_ENCODER);
         grabServo = hardwareMap.servo.get("grab_servo");
 
->>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 
 
         grabpos = 0.55;
@@ -760,27 +748,7 @@ Bytes    16-bit word    Description
 
 
 
-<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
-        if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
-            bottomArm.setPower(-1 * gamepad1.right_trigger);
-        }
-        else if(gamepad1.right_trigger >0.1) {
-            bottomArm.setPower(gamepad1.right_trigger);
-        }
-        else
-            bottomArm.setPower(0);
 
-        if (gamepad2.right_bumper && gamepad2.right_trigger > 0.1) {
-            topArm.setPower(-1 * gamepad2.right_trigger);
-        }
-        else if(gamepad2.right_trigger >0.1) {
-            topArm.setPower(gamepad2.right_trigger);
-        }
-        else
-            topArm.setPower(0);
-=======
-
->>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 
         while (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorLeftFront.getCurrentPosition()) < Math.abs(distance)
@@ -808,63 +776,12 @@ Bytes    16-bit word    Description
                 motorRightFront.setPower(direction*.8*power);
                 motorLeftBack.setPower(direction*.8*power);
             }
-<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
-        }
 
-        if(gamepad1.a && run==true && gamepad1.dpad_right){
-            angle2 = 30;
-            ticks = 1120*angle2/360;
-            run = false;
-            bottomTarget = bottomArm.getCurrentPosition() + ticks;
-            bottomArm.setTargetPosition(bottomTarget);
-            pos = bottomArm.getCurrentPosition() + ticks;
-            bottomArm.setPower(0.1);
-            if(bottomArm.getCurrentPosition() == pos){
-                bottomArm.setPower(0);
-            }
-
-        }
-        run = true;
-
-        if(gamepad1.a && run==true && gamepad1.dpad_left){
-            angle2 = 30;
-            ticks = 1120*angle2/360;
-            run = false;
-            bottomTarget = bottomArm.getCurrentPosition() + ticks;
-            bottomArm.setTargetPosition(bottomTarget);
-            pos = bottomArm.getCurrentPosition() + ticks;
-            bottomArm.setPower(-0.1);
-            if(bottomArm.getCurrentPosition() == pos){
-                bottomArm.setPower(0);
-            }
-
-        }
-
-        run = true;
-/*
-        if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
-            rightServo.setPower(-1 * gamepad1.left_trigger);
-        }
-        else if(gamepad1.left_trigger >0.1) {
-            rightServo.setPower(gamepad1.left_trigger);
-        }
-        else
-            rightServo.setPower(0);
-*/
-
-/*
-        if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
-            leftpos = leftServo.getPosition();
-            if(leftpos<170) {
-                leftpos += 0.005;
-                leftServo.setPosition(leftpos);
-=======
             else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.65*power);
                 motorRightBack.setPower(direction*.65*power);
                 motorRightFront.setPower(direction*.65*power);
                 motorLeftBack.setPower(direction*.65*power);
->>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
             }
             else if (Math.abs(motorLeftFront.getCurrentPosition()) < .8 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.6*power);
@@ -1135,7 +1052,6 @@ Bytes    16-bit word    Description
 
     }
 
-<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
     class ArmAngles {
         double A;
         double B;
@@ -1161,8 +1077,6 @@ Bytes    16-bit word    Description
         return returnAngles;
 
     }
-=======
->>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 }
 
 

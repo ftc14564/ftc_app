@@ -98,6 +98,7 @@ public class MainTeleop extends LinearOpMode {
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
         strafing = false;
 
+
         motorRightFront.setMode(RUN_WITHOUT_ENCODER);
         motorRightBack.setMode(RUN_WITHOUT_ENCODER);
         motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
@@ -112,6 +113,9 @@ public class MainTeleop extends LinearOpMode {
 
         armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
         armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+        armBottom.setMode(STOP_AND_RESET_ENCODER);
+        armTop.setMode(STOP_AND_RESET_ENCODER);
+
         lift.setDirection(DcMotorSimple.Direction.FORWARD);
         receiver.setDirection(DcMotorSimple.Direction.REVERSE);
 
@@ -537,9 +541,13 @@ public class MainTeleop extends LinearOpMode {
 
             if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
                 armTop.setDirection(DcMotorSimple.Direction.FORWARD);
+                armTop.setMode(RUN_WITHOUT_ENCODER);
+
                 armTop.setPower(gamepad1.right_trigger/2);
             } else if (gamepad1.right_trigger > 0.05) {
-                armTop.setDirection(DcMotorSimple.Direction.FORWARD);
+                armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+                armTop.setMode(RUN_WITHOUT_ENCODER);
+
                 armTop.setPower(gamepad1.right_trigger/2);
             } else {
                 armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
@@ -549,10 +557,12 @@ public class MainTeleop extends LinearOpMode {
 
             if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
                 armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
-                armBottom.setPower(gamepad1.left_trigger/3);
+                armBottom.setMode(RUN_WITHOUT_ENCODER);
+                armBottom.setPower(gamepad1.left_trigger/2);
             } else if (gamepad1.left_trigger > 0.05) {
                 armBottom.setDirection(DcMotorSimple.Direction.FORWARD);
-                armBottom.setPower(gamepad1.left_trigger/3);
+                armBottom.setMode(RUN_WITHOUT_ENCODER);
+                armBottom.setPower(gamepad1.left_trigger/2);
             } else {
                 armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 armBottom.setPower(0);
@@ -571,23 +581,6 @@ public class MainTeleop extends LinearOpMode {
 //            }
 
 
-            telemetry.addData("grab pos", grabServo.getPosition());
-
-            if (gamepad2.left_trigger != 0) {
-                // leftpos-=0.005;
-
-                //   if(leftpos<=0.3)
-                grabpos = 0.35;
-                grabServo.setPosition(grabpos);
-                telemetry.addData("grab pos", grabpos);
-            }
-            if (gamepad2.left_bumper) {
-                //   leftpos+=0.005;
-                //   if(leftpos>=0.6)
-                grabpos = 0.7;
-                grabServo.setPosition(grabpos);
-                telemetry.addData("grab pos", grabpos);
-            }
 
             if (gamepad2.y) {
                 receiver.setPower(0.7);
@@ -600,10 +593,10 @@ public class MainTeleop extends LinearOpMode {
             }
             if (gamepad2.dpad_right) {
                 try {
-                    turnTopArm(0.7, -1, 2*1440 * 70 / 360);
-                    turnBottomArm(0.4, -1, 3 * 1440 * 70 / (360));
-                    turnTopArm(0.5, -1, 2*1440 * 40 / 360);
-                    turnBottomArm(0.4, -1, 3 * 1440 * 40 / (360));
+                    turnTopArm(0.8, 1, 3*1440 * 70 / 360);
+                    turnBottomArm(0.5, -1, 3 * 1440 * 70 / (360));
+                    turnTopArm(0.4, 1, 3*1440 * 40 / 360);
+                    turnBottomArm(0.3, -1, 3 * 1440 * 20 / (360));
                 }
                 catch (Exception e){
                     e.printStackTrace();
@@ -612,17 +605,58 @@ public class MainTeleop extends LinearOpMode {
             }
             if (gamepad2.dpad_up) {
                 try {
-                    turnTopArm(0.7, -1, 2*1440 * 20 / 360);
+                    turnTopArm(0.8, 1, 3*1440 * 20 / 360);
                     turnBottomArm(0.8, 1, 3 * 1440 * 95 / (360));
-                    turnTopArm(0.7, -1, 2*1440 * 10 / 360);
+                    turnTopArm(0.6, -1, 3*1440 * 10 / 360);
 
                 }
                 catch (Exception e){
                     e.printStackTrace();
                 }
-
+            }
+            if (gamepad2.dpad_down) {
+                try {
+                    turnTopArm(0.4, -1, 3*1440 * 40 / 360);
+                    turnBottomArm(0.4, -1, 3 * 1440 * 50 / (360));
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
+            }
+            if (gamepad2.dpad_left) {
+                try {
+                    turnTopArm(0.3, -1, 3*1440 * 50 / 360);
+                    turnBottomArm(0.3, 1, 3 * 1440 * 50 / (360));
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
             }
 
+//            if (gamepad1.dpad_right) {
+//                try {
+//                    turnTopArm_E(1,3*1440 * 70 / 360);
+//                    turnBottomArm_E(-1,3 * 1440 * 70 / (360));
+//                    turnTopArm_E(1,3*1440 * 40 / 360);
+//                    turnBottomArm_E(-1,3 * 1440 * 20 / (360));
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//            if (gamepad1.dpad_up) {
+//                try {
+//                    turnTopArm_E(1, 3*1440 * 20 / 360);
+//                    turnBottomArm_E(1, 3 * 1440 * 95 / (360));
+//                    turnTopArm_E( 1, 3*1440 * 20 / 360);
+//
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//
+//            }
 
 
 
@@ -633,20 +667,22 @@ public class MainTeleop extends LinearOpMode {
 //                telemetry.addData("Left Front Power", motorLeftFront.getPower());
 //                telemetry.addData("Left Back Power", motorLeftBack.getPower());
 
+            telemetry.addData("top %d", armTop.getCurrentPosition() );
+            telemetry.addData("bottom %d", armBottom.getCurrentPosition() );
 
             telemetry.update();
         }
     }
 
 
-    public void turnTopArm_E(int degrees){
+    public void turnTopArm_E(int direction, int ticks){
 
-        int ticks = 1440 * degrees / (360*4);
+        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
         armTop.setMode(RUN_USING_ENCODER);
         armTop.setMode(STOP_AND_RESET_ENCODER);
         armTop.setMode(RUN_TO_POSITION);
-        armTop.setTargetPosition(10);
-        armTop.setPower(0.6);
+        armTop.setTargetPosition(ticks);
+        armTop.setPower(direction * 0.3);
         //while (armTop.getCurrentPosition()<ticks)
         sleep(1);
         armTop.setMode(RUN_WITHOUT_ENCODER);
@@ -654,14 +690,13 @@ public class MainTeleop extends LinearOpMode {
 
     }
 
-    public void turnBottomArm_E(int degrees){
-
-        int ticks = 3*1440*degrees/(360*4);
+    public void turnBottomArm_E(int direction, int ticks){
+        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
         armBottom.setMode(RUN_USING_ENCODER);
         armBottom.setMode(STOP_AND_RESET_ENCODER);
         armBottom.setMode(RUN_TO_POSITION);
-        armBottom.setTargetPosition(10);
-        armBottom.setPower(0.6);
+        armBottom.setTargetPosition(ticks);
+        armBottom.setPower(direction* 0.3);
         //while(armBottom.getCurrentPosition()<ticks)
         sleep(1);
         armBottom.setMode(RUN_WITHOUT_ENCODER);
@@ -754,7 +789,7 @@ public class MainTeleop extends LinearOpMode {
             }
         }
         armTop.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
-        armTop.setPower(0.2);
+        armTop.setPower(0);
 
         //stopRobot and change modes back to normal
         armTop.setMode(STOP_AND_RESET_ENCODER);

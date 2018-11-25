@@ -1,15 +1,21 @@
 package org.firstinspires.ftc.teamcode;
 
+import android.graphics.Color;
+import android.os.Process;
+
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
+import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.ColorSensor;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.Servo;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -18,6 +24,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
@@ -28,7 +35,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static android.os.SystemClock.sleep;
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_TO_POSITION;
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
+import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER;
 import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
 import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
@@ -37,22 +47,44 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@TeleOp (name = "TeleOp Drive Main2")
-public class Main2 extends OpMode {
+@Autonomous(name = "Main_Auto")
+public class MainAutonomous extends LinearOpMode {
 
     DcMotor motorRightFront;
     DcMotor motorRightBack;
     DcMotor motorLeftFront;
     DcMotor motorLeftBack;
+<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
     DcMotor bottomArm;
     DcMotor topArm;
+=======
+    DcMotor armBottom;
+    DcMotor armTop;
 
-    Servo rightServo;
-    Servo leftServo;
-    double leftpos;
+    Servo grabServo;
+    double grabpos;
 
-    double rightServoPos;
-    double incrementServo;
+    private DistanceSensor sensorRange;
+    Rev2mDistanceSensor distanceSensor;
+
+    private ColorSensor colorSensor;
+    private DistanceSensor colorDistance;
+    float hsvValues[] = {0F, 0F, 0F};
+
+    // values is a reference to the hsvValues array.
+    final float values[] = hsvValues;
+
+    // sometimes it helps to multiply the raw RGB values with a scale factor
+    // to amplify/attentuate the measured values.
+    final double SCALE_FACTOR = 255;
+
+    int pixyCounter;
+    boolean isPixyObjectSeen;
+    boolean opModeActive;
+
+>>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
+
+
 
 
     float power = 0;
@@ -95,6 +127,40 @@ public class Main2 extends OpMode {
      */
     VuforiaLocalizer vuforia = null;
     VuforiaLocalizer.Parameters Vu_parameters;
+
+    class TestThread implements Runnable{
+        @Override
+        public void run() {
+            Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
+
+            try {
+                strafe(1,1,2406);
+                OLDrotate(1,-1,90);
+                //left 2 in
+                telemetry.addData("Debug", "0");
+
+                strafe(1,-1,401);
+                telemetry.addData("Debug", "1");
+
+                //    sleep(2000);
+                //right 18 in
+                strafe(1,1,3609);
+                telemetry.addData("Debug", "2");
+
+                //left 36 in
+                //    sleep(2000);
+
+                strafe(1,-1,7218);
+                telemetry.addData("Debug", "3");
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+            telemetry.addData("Test: Thread done ","");
+
+        }
+
+    };
 
 
     class InitThread implements Runnable{
@@ -266,7 +332,7 @@ public class Main2 extends OpMode {
 
                 targetsRoverRuckus.activate();
 
-
+                initDone=true;
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -286,16 +352,106 @@ public class Main2 extends OpMode {
             pixy.engage();
 
 
-            initDone = true;
+            //initDone = true;
             telemetry.addData("Init: Thread done ","");
+
+            while(opModeActive){
+                           /*
+Bytes    16-bit word    Description
+        ----------------------------------------------------------------
+        0, 1     y              sync: 0xaa55=normal object, 0xaa56=color code object
+        2, 3     y              checksum (sum of all 16-bit words 2-6, that is, bytes 4-13)
+        4, 5     y              signature number
+        6, 7     y              x center of object
+        8, 9     y              y center of object
+        10, 11   y              width of object
+        12, 13   y              height of object
+        */
+
+                //  int pixy_x;
+
+                //  pixy_x = (int) pixy.read8(6);
+                //  pixy_x = pixy_x << 8;
+                //  pixy_x = (pixy_x & (0xff00) )| (int) pixy.read8(7);
+
+                // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
+                // telemetry.addData("Pixy_x", pixy_x);
+                // https://docs.pixycam.com/wiki/doku.php?id=wiki:v2:protocol_reference
+                //getBlocks
+
+//                pixy.write8(0,173);
+//                pixy.write8(1,193);
+//                pixy.write8(2,32);
+//                pixy.write8(3,2);
+//                pixy.write8(4,1);
+//                pixy.write8(5,1);
+
+                byte b = pixy.read8(0);
+//                telemetry.addData("Byte 0", b);
+                b = pixy.read8(1);
+//                telemetry.addData("Byte 1", b);
+                b = pixy.read8(2);
+//                telemetry.addData("Byte 2",b );
+                b = pixy.read8(3);
+//                telemetry.addData("Byte 3", b);
+                b = pixy.read8(4);
+//                telemetry.addData("Byte 4", b);
+                b = pixy.read8(5);
+//                telemetry.addData("Byte 5", b);
+                b = pixy.read8(6);
+//                telemetry.addData("Byte 6", b);
+
+                if (b!=0){
+                    if(pixyCounter < 5)
+                        pixyCounter++;
+                }
+                else{
+                    if(pixyCounter>1)
+                        pixyCounter--;
+                }
+
+                if(pixyCounter >1){
+                    isPixyObjectSeen = true;
+                }
+                else {
+                    isPixyObjectSeen = false;
+                }
+
+
+                b = pixy.read8(7);
+//                telemetry.addData("Byte 7", pixy.read8(7));
+                b = pixy.read8(8);
+//                telemetry.addData("Byte 8", pixy.read8(8));
+                b = pixy.read8(9);
+//                telemetry.addData("Byte 9", pixy.read8(9));
+                b = pixy.read8(10);
+//                telemetry.addData("Byte 10", pixy.read8(10));
+                b = pixy.read8(11);
+//                telemetry.addData("Byte 11", pixy.read8(11));
+                b = pixy.read8(12);
+//                telemetry.addData("Byte 12", pixy.read8(12));
+                b = pixy.read8(13);
+//                telemetry.addData("Byte 13", pixy.read8(13));
+                //  telemetry.addData("Byte 14", pixy.read8(14));
+                //  telemetry.addData("Byte 15", pixy.read8(15));
+                //  telemetry.addData("Byte 16", pixy.read8(16));
+                //  telemetry.addData("Byte 17", pixy.read8(17));
+                //telemetry.addData("Byte 18", pixy.read8(18));
+                //telemetry.addData("Byte 19", pixy.read8(19));
+                //telemetry.addData("Byte 20", pixy.read8(20));
+                //telemetry.addData("Byte 21", pixy.read8(21));
+               // telemetry.addData("pixyCounter", pixyCounter);
+               // telemetry.update();
+                sleep(10);
+            }
 
         }
 
     };
 
 
-    @Override
-    public void init() {
+
+    public void initFn() {
 
 
         telemetry.addData("Init: start ","");
@@ -308,23 +464,33 @@ public class Main2 extends OpMode {
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
         strafing = false;
 
-        motorRightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorLeftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
 
 
+
+<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
         bottomArm = hardwareMap.dcMotor.get("armBottom");
         bottomArm.setDirection(DcMotorSimple.Direction.REVERSE);
         topArm = hardwareMap.dcMotor.get("armTop");
 
         rightServo = hardwareMap.servo.get("grab_servo");
         leftServo = hardwareMap.servo.get("grab_servo");
+=======
+        armBottom = hardwareMap.dcMotor.get("armBottom");
+        armTop = hardwareMap.dcMotor.get("armTop");
+        armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
+        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+        armTop.setMode(RUN_WITHOUT_ENCODER);
+        armBottom.setMode(RUN_WITHOUT_ENCODER);
+        grabServo = hardwareMap.servo.get("grab_servo");
+
+>>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 
 
-        incrementServo = 0.005;
-        leftpos = 0.5;
-        rightServoPos = 0.5;
+        grabpos = 0.55;
 
         angleToTurn = 30;
 
@@ -334,10 +500,18 @@ public class Main2 extends OpMode {
         motorRightBack.setPower(driveSpeed);
         motorRightFront.setPower(driveSpeed);
 
+        grabServo.setPosition(grabpos);
+
         new Thread(new InitThread()).start();
 
         //leftServo.setPosition(leftpos);
         //rightServo.setPosition(rightServoPos);
+
+        sensorRange = hardwareMap.get(DistanceSensor.class, "2m_1");
+        distanceSensor = (Rev2mDistanceSensor)sensorRange;
+        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
+        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
+
 
     }
 
@@ -364,6 +538,7 @@ public class Main2 extends OpMode {
     public void OLDrotate (double power, int direction, double angle) {
         if(direction == -1.0 ){
             // LEFT
+            //Clockwise
             motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
             motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
             motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -371,21 +546,22 @@ public class Main2 extends OpMode {
         }
         else{
             // RIGHT
+            //Counter Clockwise
             motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
             motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
             motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
             motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
         }
 
-        motorLeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
 
-        motorLeftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
 
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         angles1 = imu1.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
@@ -460,10 +636,10 @@ public class Main2 extends OpMode {
 
     public void straight (double power, int direction, double distance) throws InterruptedException {
 
-        motorLeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
 
 /*
         while(motorLeftFront.getCurrentPosition() != 0) {
@@ -475,16 +651,19 @@ public class Main2 extends OpMode {
         telemetry.update();
 
 
-        motorLeftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        motorRightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
 
 
         motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
         motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
         motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
 
 
         telemetry.addData("Straight", "Still in straight()");
@@ -539,10 +718,10 @@ public class Main2 extends OpMode {
         stopWheels();
 
         //stopRobot and change modes back to normal
-        motorLeftBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorLeftFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightBack.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        motorRightFront.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
         //while (motorLeftFront.getCurrentPosition() != 0) {
         //waitOneFullHardwareCycle();
         //}
@@ -551,56 +730,37 @@ public class Main2 extends OpMode {
 
     }
 
+    /* direction : +1 is right , -1 is left
+       distance: in ticks
+     */
+    public void strafe (double power, int direction, double distance) throws InterruptedException {
 
-    @Override
-    public void loop() {
-
-        float right_x = gamepad1.right_stick_x;
-        float left_Y = gamepad1.left_stick_y;
-
-
-
-        if(gamepad1.dpad_right == true) {
-            if (!strafing) {
-                motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-                strafing = true;
-            }
-        }
-        else {
-            if(strafing) {
-                motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-                strafing = false;
-            }
-        }
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
 
 
 
-        if (right_x < 0) {
-            power = 1+right_x;
-            motorRightFront.setPower(left_Y);
-            motorRightBack.setPower(left_Y);
-            motorLeftFront.setPower(-left_Y);
-            motorLeftBack.setPower(-left_Y );
-        }
-
-        else if (right_x > 0) {
-            power = 1 - right_x;
-            motorRightFront.setPower(-left_Y);
-            motorRightBack.setPower(-left_Y);
-            motorLeftFront.setPower(left_Y);
-            motorLeftBack.setPower(left_Y);
-        }
-
-        else{
-            motorRightFront.setPower(left_Y);
-            motorRightBack.setPower(left_Y );
-            motorLeftFront.setPower(left_Y);
-            motorLeftBack.setPower(left_Y);
-        }
+        telemetry.addData("Strafe", "strafe");
+        telemetry.update();
 
 
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+
+
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+
+
+<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
         if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
             bottomArm.setPower(-1 * gamepad1.right_trigger);
         }
@@ -618,31 +778,37 @@ public class Main2 extends OpMode {
         }
         else
             topArm.setPower(0);
+=======
 
-        if(gamepad1.dpad_up) {
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angleToTurn = 30 + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
-            OLDrotate(0.8, 1, angleToTurn);
-        }
-        if(gamepad1.dpad_down) {
-            angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            angleToTurn =  Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) + 30;
-            OLDrotate(0.8, -1, angleToTurn);
-        }
+>>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 
-        if(gamepad1.y) {
-            try {
-                straight(1, 1, 1600);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+        while (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
+                && Math.abs(motorLeftFront.getCurrentPosition()) < Math.abs(distance)
+                && Math.abs(motorRightFront.getCurrentPosition()) < Math.abs(distance)
+                && Math.abs(motorRightBack.getCurrentPosition()) < Math.abs(distance) ) {
+
+            /*if(System.currentTimeMillis()-startTime > 29500 ){
+                break;
+            }*/
+            telemetry.addData("Position", motorLeftFront.getCurrentPosition());
+            telemetry.update();
+            motorLeftFront.setPower(direction*.3*power);
+            motorRightBack.setPower(direction*.3*power);
+            motorRightFront.setPower(direction*.3*power);
+            motorLeftBack.setPower(direction*.3*power);
+            if (Math.abs(motorLeftFront.getCurrentPosition()) < .05 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*power);
+                motorRightBack.setPower(direction*power);
+                motorRightFront.setPower(direction*power);
+                motorLeftBack.setPower(direction*power);
             }
-        }
-        if(gamepad1.x) {
-            try {
-                straight(1, -1, 1600);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .5 * Math.abs(distance)) {
+                motorLeftFront.setPower(direction*.8*power);
+                motorRightBack.setPower(direction*.8*power);
+                motorRightFront.setPower(direction*.8*power);
+                motorLeftBack.setPower(direction*.8*power);
             }
+<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
         }
 
         if(gamepad1.a && run==true && gamepad1.dpad_right){
@@ -692,50 +858,112 @@ public class Main2 extends OpMode {
             if(leftpos<170) {
                 leftpos += 0.005;
                 leftServo.setPosition(leftpos);
+=======
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.65*power);
+                motorRightBack.setPower(direction*.65*power);
+                motorRightFront.setPower(direction*.65*power);
+                motorLeftBack.setPower(direction*.65*power);
+>>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .8 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.6*power);
+                motorRightBack.setPower(direction*.6*power);
+                motorRightFront.setPower(direction*.6*power);
+                motorLeftBack.setPower(direction*.6*power);
+            }
+            else{
+                motorLeftFront.setPower(direction*.4*power);
+                motorRightBack.setPower(direction*.4*power);
+                motorRightFront.setPower(direction*.4*power);
+                motorLeftBack.setPower(direction*.4*power);
             }
         }
-        else if(gamepad2.left_trigger >0.1) {
-            leftpos = leftServo.getPosition();
-            if(leftpos>=0.005) {
-                leftpos -= 0.005;
-                leftServo.setPosition(leftpos);
+        stopWheels();
+
+        //stopRobot and change modes back to normal
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+        //while (motorLeftFront.getCurrentPosition() != 0) {
+        //waitOneFullHardwareCycle();
+        //}
+
+        //back to non strafing convention
+        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+
+        sleep(200);
+
+    }
+
+
+    @Override
+    public void runOpMode() {
+
+        pixyCounter = 0;
+        isPixyObjectSeen = false;
+        opModeActive = true;
+        initFn();
+
+        waitForStart();
+
+
+        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
+        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
+                (int) (colorSensor.green() * SCALE_FACTOR),
+                (int) (colorSensor.blue() * SCALE_FACTOR),
+                hsvValues);
+
+        // send the info back to driver station using telemetry function.
+        telemetry.addData("Distance (cm)",
+                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
+        telemetry.addData("Alpha", colorSensor.alpha());
+        telemetry.addData("Red  ", colorSensor.red());
+        telemetry.addData("Green", colorSensor.green());
+        telemetry.addData("Blue ", colorSensor.blue());
+        telemetry.addData("Hue", hsvValues[0]);
+
+
+        try {
+
+//                new Thread(new TestThread()).start();
+            strafe(1, 1, 3192);  //16 inch = 133 * 16 (3/2)
+            OLDrotate(1, -1, 80);
+            //left 2 in
+            telemetry.addData("Debug", "0");
+
+            strafe(1, -1, 401);
+            telemetry.addData("Debug", "1");
+
+            if (isPixyObjectSeen) {
+                straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                telemetry.addData("Debug", "object seen");
+            } else {
+
+                //right 15.5 in
+                strafe(1, 1, 3092);
+                straight(1, 1,499); //2.5 inch = 133 * 2.5 * (3/2)
+                telemetry.addData("Debug", "2");
+                if (isPixyObjectSeen)
+                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                else {
+                    //left 33 in
+
+                    strafe(1, -1, 6384);
+                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+
+                    telemetry.addData("Debug", "3");
+                }
             }
-        }
-*/
-        telemetry.addData("left pos", leftServo.getPosition());
 
-        if (gamepad2.left_trigger != 0) {
-           // leftpos-=0.005;
-
-         //   if(leftpos<=0.3)
-                leftpos=0.35;
-            leftServo.setPosition(leftpos);
-            telemetry.addData("left pos", leftpos);
-        }
-        if(gamepad2.left_bumper)
-        {
-         //   leftpos+=0.005;
-         //   if(leftpos>=0.6)
-                leftpos=0.55;
-            leftServo.setPosition(leftpos);
-            telemetry.addData("left pos", leftpos);
-        }
-
-        telemetry.addData("right pos", rightServoPos);
-
-        if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
-            if(rightServoPos<0.9)
-                rightServoPos+=0.05;
-            rightServo.setPosition(rightServoPos);
-        }
-        else if(gamepad1.left_trigger >0.1) {
-            if(rightServoPos>=0.05)
-                rightServoPos-=0.05;
-            rightServo.setPosition(rightServoPos);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
 
-        if(initDone) {
+        if (initDone) {
 
 
             targetVisible = false;
@@ -769,53 +997,145 @@ public class Main2 extends OpMode {
             }
 
 
-        /*
-Bytes    16-bit word    Description
-        ----------------------------------------------------------------
-        0, 1     y              sync: 0xaa55=normal object, 0xaa56=color code object
-        2, 3     y              checksum (sum of all 16-bit words 2-6, that is, bytes 4-13)
-        4, 5     y              signature number
-        6, 7     y              x center of object
-        8, 9     y              y center of object
-        10, 11   y              width of object
-        12, 13   y              height of object
-        */
+            telemetry.addData("pixyCounter", pixyCounter);
 
-      //  int pixy_x;
-
-      //  pixy_x = (int) pixy.read8(6);
-      //  pixy_x = pixy_x << 8;
-      //  pixy_x = (pixy_x & (0xff00) )| (int) pixy.read8(7);
-
-       // int pixy_x = ((pixy.read8(4) & 0xff) << 8) | (pixy.read8(5) & 0xff);
-       // telemetry.addData("Pixy_x", pixy_x);
-
-
-        telemetry.addData("Byte 0", pixy.read8(0));
-        telemetry.addData("Byte 1", pixy.read8(1));
-        telemetry.addData("Byte 2", pixy.read8(2));
-        telemetry.addData("Byte 3", pixy.read8(3));
-        telemetry.addData("Byte 4", pixy.read8(4));
-        telemetry.addData("Byte 5", pixy.read8(5));
-        telemetry.addData("Byte 6", pixy.read8(6));
-        telemetry.addData("Byte 7", pixy.read8(7));
-        telemetry.addData("Byte 8", pixy.read8(8));
-        telemetry.addData("Byte 9", pixy.read8(9));
-        telemetry.addData("Byte 10", pixy.read8(10));
-        telemetry.addData("Byte 11", pixy.read8(11));
-        telemetry.addData("Byte 12", pixy.read8(12));
-        telemetry.addData("Byte 13", pixy.read8(13));
-
-        telemetry.addData("Right Front Power", motorRightFront.getPower());
-        telemetry.addData("Right Back Power", motorRightBack.getPower());
-        telemetry.addData("Left Front Power", motorLeftFront.getPower());
-        telemetry.addData("Left Back Power", motorLeftBack.getPower());
+//                telemetry.addData("Right Front Power", motorRightFront.getPower());
+//                telemetry.addData("Right Back Power", motorRightBack.getPower());
+//                telemetry.addData("Left Front Power", motorLeftFront.getPower());
+//                telemetry.addData("Left Back Power", motorLeftBack.getPower());
 
         }
         telemetry.update();
 
+        opModeActive = false;
+
+    }
+    public void turnTopArm_E(int degrees){
+
+        int ticks = 1440 * degrees / (360*4);
+        armTop.setMode(RUN_USING_ENCODER);
+        armTop.setMode(STOP_AND_RESET_ENCODER);
+        armTop.setMode(RUN_TO_POSITION);
+        armTop.setTargetPosition(10);
+        armTop.setPower(0.6);
+        //while (armTop.getCurrentPosition()<ticks)
+        sleep(1);
+        armTop.setMode(RUN_WITHOUT_ENCODER);
+
+
     }
 
+    public void turnBottomArm_E(int degrees){
+
+        int ticks = 3*1440*degrees/(360*4);
+        armBottom.setMode(RUN_USING_ENCODER);
+        armBottom.setMode(STOP_AND_RESET_ENCODER);
+        armBottom.setMode(RUN_TO_POSITION);
+        armBottom.setTargetPosition(10);
+        armBottom.setPower(0.6);
+        //while(armBottom.getCurrentPosition()<ticks)
+        sleep(1);
+        armBottom.setMode(RUN_WITHOUT_ENCODER);
+    }
+
+    public void turnBottomArm (double power, int direction, double distance) throws InterruptedException {
+
+        armBottom.setMode(STOP_AND_RESET_ENCODER);
+
+
+        telemetry.addData("turnBottomArm", "In straight()");
+        telemetry.update();
+
+
+        armBottom.setMode(RUN_WITHOUT_ENCODER);
+        armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        int count = 0;
+        while (Math.abs(armBottom.getCurrentPosition()) < Math.abs(distance)
+                && count++ <50) {
+
+            telemetry.addData("armBottom Position", armBottom.getCurrentPosition());
+            telemetry.update();
+            armBottom.setPower(direction*.4*power);
+
+            if (Math.abs(armBottom.getCurrentPosition()) < .05 * Math.abs(distance)){
+                armBottom.setPower(direction*power);
+            }
+            else if (Math.abs(armBottom.getCurrentPosition()) < .5 * Math.abs(distance)) {
+                armBottom.setPower(direction*.8*power);
+
+            }
+            else if (Math.abs(armBottom.getCurrentPosition()) < .6 * Math.abs(distance)){
+                armBottom.setPower(direction*.6*power);
+            }
+            else if (Math.abs(armBottom.getCurrentPosition()) < .9 * Math.abs(distance)){
+                armBottom.setPower(direction*.5*power);
+
+            }
+            else{
+                armBottom.setPower(direction*.2*power);
+            }
+        }
+        armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armBottom.setPower(0);
+
+        //stopRobot and change modes back to normal
+        armBottom.setMode(STOP_AND_RESET_ENCODER);
+
+       // sleep(100);
+
+
+    }
+    public void turnTopArm (double power, int direction, double distance) throws InterruptedException {
+
+        armTop.setMode(STOP_AND_RESET_ENCODER);
+
+
+        telemetry.addData("armTop", "In straight()");
+        telemetry.update();
+
+
+        armTop.setMode(RUN_WITHOUT_ENCODER);
+        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        int count =0;
+        while (Math.abs(armTop.getCurrentPosition()) < Math.abs(distance)
+                && count++ < 30) {
+
+            telemetry.addData("armTop Position", armTop.getCurrentPosition());
+            telemetry.update();
+            armTop.setPower(direction*.4*power);
+
+            if (Math.abs(armTop.getCurrentPosition()) < .4 * Math.abs(distance)){
+                armTop.setPower(direction*power);
+            }
+            else if (Math.abs(armTop.getCurrentPosition()) < .8 * Math.abs(distance)) {
+                armTop.setPower(direction*.8*power);
+
+            }
+            else if (Math.abs(armTop.getCurrentPosition()) < .85 * Math.abs(distance)){
+                armTop.setPower(direction*.7*power);
+            }
+            else if (Math.abs(armTop.getCurrentPosition()) < .9 * Math.abs(distance)){
+                armTop.setPower(direction*.5*power);
+
+            }
+            else{
+                armTop.setPower(direction*.4*power);
+            }
+        }
+        armTop.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        armTop.setPower(0.2);
+
+        //stopRobot and change modes back to normal
+        armTop.setMode(STOP_AND_RESET_ENCODER);
+
+    //    sleep(100);
+
+
+    }
+
+<<<<<<< HEAD:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/Main2.java
     class ArmAngles {
         double A;
         double B;
@@ -841,6 +1161,8 @@ Bytes    16-bit word    Description
         return returnAngles;
 
     }
+=======
+>>>>>>> ashiria_dev:TeamCode/src/main/java/org/firstinspires/ftc/teamcode/MainAutonomous.java
 }
 
 

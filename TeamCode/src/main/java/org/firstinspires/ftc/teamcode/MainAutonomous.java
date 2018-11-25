@@ -804,7 +804,7 @@ Bytes    16-bit word    Description
     @Override
     public void runOpMode() {
 
-        pixyCounter=0;
+        pixyCounter = 0;
         isPixyObjectSeen = false;
         opModeActive = true;
         initFn();
@@ -812,117 +812,103 @@ Bytes    16-bit word    Description
         waitForStart();
 
 
-        // run until the end of the match (driver presses STOP)
-        while (opModeIsActive()) {
+        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
+        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
+                (int) (colorSensor.green() * SCALE_FACTOR),
+                (int) (colorSensor.blue() * SCALE_FACTOR),
+                hsvValues);
+
+        // send the info back to driver station using telemetry function.
+        telemetry.addData("Distance (cm)",
+                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
+        telemetry.addData("Alpha", colorSensor.alpha());
+        telemetry.addData("Red  ", colorSensor.red());
+        telemetry.addData("Green", colorSensor.green());
+        telemetry.addData("Blue ", colorSensor.blue());
+        telemetry.addData("Hue", hsvValues[0]);
 
 
-            telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
-            Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
-                    (int) (colorSensor.green() * SCALE_FACTOR),
-                    (int) (colorSensor.blue() * SCALE_FACTOR),
-                    hsvValues);
-
-            // send the info back to driver station using telemetry function.
-            telemetry.addData("Distance (cm)",
-                    String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
-            telemetry.addData("Alpha", colorSensor.alpha());
-            telemetry.addData("Red  ", colorSensor.red());
-            telemetry.addData("Green", colorSensor.green());
-            telemetry.addData("Blue ", colorSensor.blue());
-            telemetry.addData("Hue", hsvValues[0]);
-
-
-
-
-
-
-
-
-
-
-
-
-                try {
+        try {
 
 //                new Thread(new TestThread()).start();
-                    strafe(1, 1, 2593);  //13 inch = 133 * 14 (3/2)
-                    OLDrotate(1, -1, 80);
-                    //left 2 in
-                    telemetry.addData("Debug", "0");
+            strafe(1, 1, 3192);  //16 inch = 133 * 16 (3/2)
+            OLDrotate(1, -1, 80);
+            //left 2 in
+            telemetry.addData("Debug", "0");
 
-                    strafe(1, -1, 401);
-                    telemetry.addData("Debug", "1");
+            strafe(1, -1, 401);
+            telemetry.addData("Debug", "1");
 
-                    if(isPixyObjectSeen) {
-                        straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
-                        telemetry.addData("Debug", "object seen");
-                    }
-                    else {
+            if (isPixyObjectSeen) {
+                straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                telemetry.addData("Debug", "object seen");
+            } else {
 
-                        //right 16.5 in
-                        strafe(1, 1, 3192);
-                        telemetry.addData("Debug", "2");
-                        if (isPixyObjectSeen)
-                            straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
-                        else {
-                            //left 33 in
+                //right 15.5 in
+                strafe(1, 1, 3092);
+                straight(1, 1,499); //2.5 inch = 133 * 2.5 * (3/2)
+                telemetry.addData("Debug", "2");
+                if (isPixyObjectSeen)
+                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                else {
+                    //left 33 in
 
-                            strafe(1, -1, 6384);
-                            straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                    strafe(1, -1, 6384);
+                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
 
-                            telemetry.addData("Debug", "3");
-                        }
-                    }
-
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    telemetry.addData("Debug", "3");
                 }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
 
-            if (initDone) {
+        if (initDone) {
 
 
-                targetVisible = false;
-                for (VuforiaTrackable trackable : allTrackables) {
-                    if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
-                        telemetry.addData("Visible Target", trackable.getName());
-                        targetVisible = true;
+            targetVisible = false;
+            for (VuforiaTrackable trackable : allTrackables) {
+                if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
+                    telemetry.addData("Visible Target", trackable.getName());
+                    targetVisible = true;
 
-                        // getUpdatedRobotLocation() will return null if no new information is available since
-                        // the last time that call was made, or if the trackable is not currently visible.
-                        OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-                        if (robotLocationTransform != null) {
-                            lastLocation = robotLocationTransform;
-                        }
-                        break;
+                    // getUpdatedRobotLocation() will return null if no new information is available since
+                    // the last time that call was made, or if the trackable is not currently visible.
+                    OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
+                    if (robotLocationTransform != null) {
+                        lastLocation = robotLocationTransform;
                     }
+                    break;
                 }
+            }
 
-                // Provide feedback as to where the robot is located (if we know).
-                if (targetVisible) {
-                    // express position (translation) of robot in inches.
-                    VectorF translation = lastLocation.getTranslation();
-                    telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                            translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
+            // Provide feedback as to where the robot is located (if we know).
+            if (targetVisible) {
+                // express position (translation) of robot in inches.
+                VectorF translation = lastLocation.getTranslation();
+                telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
+                        translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
 
-                    // express the rotation of the robot in degrees.
-                    Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-                    telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
-                } else {
-                    telemetry.addData("Visible Target", "none");
-                }
+                // express the rotation of the robot in degrees.
+                Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
+                telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
+            } else {
+                telemetry.addData("Visible Target", "none");
+            }
 
 
-                telemetry.addData("pixyCounter", pixyCounter);
+            telemetry.addData("pixyCounter", pixyCounter);
 
 //                telemetry.addData("Right Front Power", motorRightFront.getPower());
 //                telemetry.addData("Right Back Power", motorRightBack.getPower());
 //                telemetry.addData("Left Front Power", motorLeftFront.getPower());
 //                telemetry.addData("Left Back Power", motorLeftBack.getPower());
 
-            }
-            telemetry.update();
         }
+        telemetry.update();
+
         opModeActive = false;
 
     }

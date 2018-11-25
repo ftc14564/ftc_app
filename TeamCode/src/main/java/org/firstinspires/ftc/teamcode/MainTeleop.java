@@ -536,7 +536,7 @@ public class MainTeleop extends LinearOpMode {
             }
 
             if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
-                armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+                armTop.setDirection(DcMotorSimple.Direction.FORWARD);
                 armTop.setPower(gamepad1.right_trigger/2);
             } else if (gamepad1.right_trigger > 0.05) {
                 armTop.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -549,10 +549,10 @@ public class MainTeleop extends LinearOpMode {
 
             if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
                 armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
-                armBottom.setPower(gamepad1.left_trigger/2);
+                armBottom.setPower(gamepad1.left_trigger/3);
             } else if (gamepad1.left_trigger > 0.05) {
                 armBottom.setDirection(DcMotorSimple.Direction.FORWARD);
-                armBottom.setPower(gamepad1.left_trigger/2);
+                armBottom.setPower(gamepad1.left_trigger/3);
             } else {
                 armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 armBottom.setPower(0);

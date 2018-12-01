@@ -569,6 +569,17 @@ public class MainTeleop extends LinearOpMode {
 
             }
 
+            if(gamepad2.left_stick_y>0)
+            {
+                lift.setPower(-1);
+            }
+            else if(gamepad2.left_stick_y<0){
+                lift.setPower(1);
+            }
+            else{
+                lift.setPower(0);
+            }
+
 //            if (gamepad1.dpad_right) {
 //                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 //                angleToTurn = 30 + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));

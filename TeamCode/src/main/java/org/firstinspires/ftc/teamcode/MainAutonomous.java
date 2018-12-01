@@ -56,6 +56,7 @@ public class MainAutonomous extends LinearOpMode {
     DcMotor motorLeftBack;
     DcMotor armBottom;
     DcMotor armTop;
+    DcMotor lift;
 
     Servo grabServo;
     double grabpos;
@@ -452,6 +453,9 @@ Bytes    16-bit word    Description
         motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
         motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
 
+        lift = hardwareMap.dcMotor.get("lift");
+        lift.setDirection(DcMotorSimple.Direction.FORWARD);
+        lift.setMode(RUN_WITHOUT_ENCODER);
 
 
         armBottom = hardwareMap.dcMotor.get("armBottom");
@@ -830,6 +834,10 @@ Bytes    16-bit word    Description
 
         try {
 
+            lift.setPower(-1);
+            sleep(8000);
+            lift.setPower(0);
+
 //                new Thread(new TestThread()).start();
             strafe(1, 1, 3192);  //16 inch = 133 * 16 (3/2)
             OLDrotate(1, -1, 80);
@@ -840,20 +848,20 @@ Bytes    16-bit word    Description
             telemetry.addData("Debug", "1");
 
             if (isPixyObjectSeen) {
-                straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                straight(1, 1, 4788); // 24 inch = 133*24*(3/2)
                 telemetry.addData("Debug", "object seen");
             } else {
 
-                //right 15.5 in
-                strafe(1, 1, 3092);
+                //right 14.5 in
+                strafe(1, 1, 2893);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
                 straight(1, 1,499); //2.5 inch = 133 * 2.5 * (3/2)
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen)
                     straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
                 else {
-                    //left 33 in
+                    //left 29 in
 
-                    strafe(1, -1, 6384);
+                    strafe(1, -1, 5785.5); //29 inch = 133 * 29 * (3/2) = 5785.5
                     straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
 
                     telemetry.addData("Debug", "3");

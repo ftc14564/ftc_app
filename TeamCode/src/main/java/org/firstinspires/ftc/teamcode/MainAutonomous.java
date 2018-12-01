@@ -61,11 +61,18 @@ public class MainAutonomous extends LinearOpMode {
     Servo grabServo;
     double grabpos;
 
-    private DistanceSensor sensorRange;
-    Rev2mDistanceSensor distanceSensor;
+    private DistanceSensor sensorRange_rf;
+    private DistanceSensor sensorRange_rb;
+    private DistanceSensor sensorRange_lb;
 
-    private ColorSensor colorSensor;
-    private DistanceSensor colorDistance;
+    double distanceToWall;
+
+    Rev2mDistanceSensor distanceSensor_rf;
+    Rev2mDistanceSensor distanceSensor_rb;
+    Rev2mDistanceSensor distanceSensor_lb;
+
+//    private ColorSensor colorSensor;
+//    private DistanceSensor colorDistance;
     float hsvValues[] = {0F, 0F, 0F};
 
     // values is a reference to the hsvValues array.
@@ -485,10 +492,14 @@ Bytes    16-bit word    Description
         //leftServo.setPosition(leftpos);
         //rightServo.setPosition(rightServoPos);
 
-        sensorRange = hardwareMap.get(DistanceSensor.class, "2m_1");
-        distanceSensor = (Rev2mDistanceSensor)sensorRange;
-        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
-        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
+        sensorRange_rf = hardwareMap.get(DistanceSensor.class, "2m_rf");
+        distanceSensor_rf = (Rev2mDistanceSensor)sensorRange_rf;
+        sensorRange_rb = hardwareMap.get(DistanceSensor.class, "2m_rf");
+        distanceSensor_rb = (Rev2mDistanceSensor)sensorRange_rf;
+        sensorRange_lb = hardwareMap.get(DistanceSensor.class, "2m_rf");
+        distanceSensor_lb = (Rev2mDistanceSensor)sensorRange_rf;
+//        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
+//        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
 
 
     }
@@ -816,54 +827,84 @@ Bytes    16-bit word    Description
         waitForStart();
 
 
-        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange.getDistance(DistanceUnit.MM)));
-        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
-                (int) (colorSensor.green() * SCALE_FACTOR),
-                (int) (colorSensor.blue() * SCALE_FACTOR),
-                hsvValues);
+        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange_lb.getDistance(DistanceUnit.MM)));
+//        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
+//                (int) (colorSensor.green() * SCALE_FACTOR),
+//                (int) (colorSensor.blue() * SCALE_FACTOR),
+//                hsvValues);
 
         // send the info back to driver station using telemetry function.
-        telemetry.addData("Distance (cm)",
-                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
-        telemetry.addData("Alpha", colorSensor.alpha());
-        telemetry.addData("Red  ", colorSensor.red());
-        telemetry.addData("Green", colorSensor.green());
-        telemetry.addData("Blue ", colorSensor.blue());
-        telemetry.addData("Hue", hsvValues[0]);
+//        telemetry.addData("Distance (cm)",
+//                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
+//        telemetry.addData("Alpha", colorSensor.alpha());
+//        telemetry.addData("Red  ", colorSensor.red());
+//        telemetry.addData("Green", colorSensor.green());
+//        telemetry.addData("Blue ", colorSensor.blue());
+//        telemetry.addData("Hue", hsvValues[0]);
 
 
         try {
 
-            lift.setPower(-1);
-            sleep(8000);
-            lift.setPower(0);
+            //straight(1,1,500);
+            //back
+//            lift.setPower(-1);
+//            sleep(9000);
+//            lift.setPower(0);
 
-//                new Thread(new TestThread()).start();
-            strafe(1, 1, 3192);  //16 inch = 133 * 16 (3/2)
-            OLDrotate(1, -1, 80);
+////                new Thread(new TestThread()).start();
+//            strafe(1,-1,100);
+            straight(1,-1,400);
+            strafe(1,1,1197);
+            OLDrotate(1, -1, 85);
+            strafe(1, -1, 600);  //16 inch = 133 * 16 (3/2)
             //left 2 in
+            straight(1,1,665);
             telemetry.addData("Debug", "0");
-
-            strafe(1, -1, 401);
+            //
             telemetry.addData("Debug", "1");
-
+            sleep(500);
             if (isPixyObjectSeen) {
-                straight(1, 1, 4788); // 24 inch = 133*24*(3/2)
+                straight(1, 1, 2128); // 24 inch = 133*24*(3/2)
+                straight(1,-1,2128);
+           //     straight(1,-1,1500);
+                telemetry.addData("sampling","middle");
+//                OLDrotate(1,-1,80);
+//                straight(1,-1,7182);
+//                OLDrotate(1,1,45);
+//                distanceToWall = sensorRange_lb.getDistance(DistanceUnit.CM);
+//                if(distanceToWall > 8){
+//                    double temp = distanceToWall-8;
+//                    strafe(1,1,199.5 * temp);
+//                    OLDrotate();
+//                }
+//                while(sensorRange_lb.getDistance() > 6){
+//                    strafe(1,1,);
+//                }
                 telemetry.addData("Debug", "object seen");
             } else {
 
                 //right 14.5 in
-                strafe(1, 1, 2893);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
-                straight(1, 1,499); //2.5 inch = 133 * 2.5 * (3/2)
+                strafe(1, 1, 2300);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
+//                straight(1, 1, 2128); //2.5 inch = 133 * 2.5 * (3/2)
+//                straight(1, -1, 2128);
+                sleep(500);
                 telemetry.addData("Debug", "2");
-                if (isPixyObjectSeen)
-                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
+                if (isPixyObjectSeen) {
+                    straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
+                    straight(1, -1, 2128);
+//                    OLDrotate(1, -1, 90);
+//                    straight(1, 1, 9975);
+//                    OLDrotate(1,1,45);
+                }
                 else {
                     //left 29 in
 
-                    strafe(1, -1, 5785.5); //29 inch = 133 * 29 * (3/2) = 5785.5
-                    straight(1, 1, 1197); // 6 inch = 133*6*(3/2)
-
+                    strafe(1, -1, 4700); //29 inch = 133 * 29 * (3/2) = 5785.5
+                    straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
+                    straight(1,-1,2128);
+//                    OLDrotate(1,-1,90);
+//                    straight(1,1,4389);
+//                    OLDrotate(1,1,45);
                     telemetry.addData("Debug", "3");
                 }
             }

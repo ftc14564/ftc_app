@@ -539,27 +539,27 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftBack.setPower(0);
             }
 
-            if (gamepad1.right_bumper && gamepad1.right_trigger > 0.1) {
+            if (gamepad2.right_bumper && gamepad2.right_trigger > 0.1) {
                 armTop.setDirection(DcMotorSimple.Direction.FORWARD);
                 armTop.setMode(RUN_WITHOUT_ENCODER);
 
-                armTop.setPower(gamepad1.right_trigger/2);
-            } else if (gamepad1.right_trigger > 0.05) {
+                armTop.setPower(gamepad2.right_trigger/2);
+            } else if (gamepad2.right_trigger > 0.05) {
                 armTop.setDirection(DcMotorSimple.Direction.REVERSE);
                 armTop.setMode(RUN_WITHOUT_ENCODER);
 
-                armTop.setPower(gamepad1.right_trigger/2);
+                armTop.setPower(gamepad2.right_trigger/2);
             } else {
                 armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 armTop.setPower(0);
             }
 
 
-            if (gamepad1.left_bumper && gamepad1.left_trigger > 0.1) {
+            if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
                 armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
                 armBottom.setMode(RUN_WITHOUT_ENCODER);
                 armBottom.setPower(gamepad1.left_trigger/2);
-            } else if (gamepad1.left_trigger > 0.05) {
+            } else if (gamepad2.left_trigger > 0.05) {
                 armBottom.setDirection(DcMotorSimple.Direction.FORWARD);
                 armBottom.setMode(RUN_WITHOUT_ENCODER);
                 armBottom.setPower(gamepad1.left_trigger/2);

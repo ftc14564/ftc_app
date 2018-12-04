@@ -558,11 +558,11 @@ public class MainTeleop extends LinearOpMode {
             if (gamepad2.left_bumper && gamepad2.left_trigger > 0.1) {
                 armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
                 armBottom.setMode(RUN_WITHOUT_ENCODER);
-                armBottom.setPower(gamepad1.left_trigger/2);
+                armBottom.setPower(gamepad2.left_trigger/2);
             } else if (gamepad2.left_trigger > 0.05) {
                 armBottom.setDirection(DcMotorSimple.Direction.FORWARD);
                 armBottom.setMode(RUN_WITHOUT_ENCODER);
-                armBottom.setPower(gamepad1.left_trigger/2);
+                armBottom.setPower(gamepad2.left_trigger/2);
             } else {
                 armBottom.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
                 armBottom.setPower(0);
@@ -644,6 +644,26 @@ public class MainTeleop extends LinearOpMode {
                 }
             }
 
+//            if (gamepad1.right_trigger > 0.05) {
+//                try {
+//                    turnBothArms(gamepad1.right_trigger, 1, 100);
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
+//            if (gamepad1.left_trigger > 0.05) {
+//                try {
+//                    turnBothArms(gamepad1.left_trigger, -1, 100);
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
+
+
+
+
 //            if (gamepad1.dpad_right) {
 //                try {
 //                    turnTopArm_E(1,3*1440 * 70 / 360);
@@ -712,6 +732,7 @@ public class MainTeleop extends LinearOpMode {
         sleep(1);
         armBottom.setMode(RUN_WITHOUT_ENCODER);
     }
+
 
     public void turnBottomArm (double power, int direction, double distance) throws InterruptedException {
 
@@ -809,7 +830,34 @@ public class MainTeleop extends LinearOpMode {
 
 
     }
+    public void turnBothArms (double power, int direction, double distance) throws InterruptedException {
 
+        armBottom.setMode(STOP_AND_RESET_ENCODER);
+        armTop.setMode(STOP_AND_RESET_ENCODER);
+
+
+        telemetry.addData("turnBothArms", "In straight()");
+        telemetry.update();
+
+        double distanceTop = 4 * distance / 3;
+        double distanceBottom = distance;
+        armBottom.setMode(RUN_WITHOUT_ENCODER);
+        armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
+        armTop.setMode(RUN_WITHOUT_ENCODER);
+        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        int count = 0;
+        while (Math.abs(armBottom.getCurrentPosition()) < Math.abs(distanceBottom)
+                && count++ <50) {
+
+            armBottom.setPower(-direction*power);
+
+            armTop.setPower(direction*power);
+
+        }
+
+
+    }
 }
 
 

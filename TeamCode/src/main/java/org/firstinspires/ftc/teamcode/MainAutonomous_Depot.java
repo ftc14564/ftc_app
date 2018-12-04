@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Color;
 import android.os.Process;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
@@ -8,8 +7,6 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DistanceSensor;
@@ -47,8 +44,8 @@ import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocaliz
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@Autonomous(name = "Main_Auto")
-public class MainAutonomous extends LinearOpMode {
+@Autonomous(name = "Auto_Depot")
+public class MainAutonomous_Depot extends LinearOpMode {
 
     DcMotor motorRightFront;
     DcMotor motorRightBack;
@@ -864,8 +861,11 @@ Bytes    16-bit word    Description
             telemetry.addData("Debug", "1");
             sleep(500);
             if (isPixyObjectSeen) {
-                straight(1, 1, 2128); // 24 inch = 133*24*(3/2)
-                straight(1,-1,2128);
+                straight(1, 1, 2128);
+                // 24 inch = 133*24*(3/2)
+                straight(1,1,2660);
+                OLDrotate(1,1,45);
+                straight(1,-1,7000);
            //     straight(1,-1,1500);
                 telemetry.addData("sampling","middle");
 //                OLDrotate(1,-1,80);
@@ -891,7 +891,10 @@ Bytes    16-bit word    Description
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen) {
                     straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    straight(1, -1, 2128);
+                    OLDrotate(1,-1,5);
+                    straight(1,1,3200);
+                    OLDrotate(1,1,50);
+                    straight(1, -1, 7200);
 //                    OLDrotate(1, -1, 90);
 //                    straight(1, 1, 9975);
 //                    OLDrotate(1,1,45);
@@ -901,7 +904,10 @@ Bytes    16-bit word    Description
 
                     strafe(1, -1, 4700); //29 inch = 133 * 29 * (3/2) = 5785.5
                     straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    straight(1,-1,2128);
+                    OLDrotate(1,1,5);
+                    straight(1,-1,3200);
+                    OLDrotate(1,1,45);
+                    straight(1,-1,7200);
 //                    OLDrotate(1,-1,90);
 //                    straight(1,1,4389);
 //                    OLDrotate(1,1,45);

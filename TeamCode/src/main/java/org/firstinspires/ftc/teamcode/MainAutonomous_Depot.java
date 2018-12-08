@@ -181,6 +181,11 @@ public class MainAutonomous_Depot extends LinearOpMode {
                 imu1 = hardwareMap.get(BNO055IMU.class, "imu_1");
                 imu1.initialize(parameters);
 
+                double a = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
+
+                telemetry.addData("initial angle", Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))));
+                telemetry.update();
+                sleep(5000);
 
                 /*
                  * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
@@ -554,18 +559,21 @@ Bytes    16-bit word    Description
 
         telemetry.addData("Robot turning", "Yay!");
         telemetry.update();
-        sleep(150);
+        //sleep(150);
 
-
+        int counter = 0;
 
         if(direction == 1)
         {
+            angle = angle + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
+
             // RIGHT
-            telemetry.addData("Robot turning right", "Yay!");
+            telemetry.addData("Robot turning right: ", angle);
             telemetry.update();
             sleep(150);
-            while (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle )
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
             {
+                //counter++;
                 /*if(System.currentTimeMillis()-startTime > 29500 ){
                     break;
                 }*/
@@ -576,7 +584,7 @@ Bytes    16-bit word    Description
                 telemetry.update();
 
 
-                double _power = 1.15*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+                double _power = 1.30*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
                 motorLeftFront.setPower(_power);
                 motorRightBack.setPower(_power);
                 motorRightFront.setPower(_power);
@@ -589,12 +597,16 @@ Bytes    16-bit word    Description
             stopWheels();
         }
         else{
+            angle = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) - angle;
+
             // LEFT
-            telemetry.addData("Robot turning left", "Yay!");
+            telemetry.addData("Robot turning left: ", angle);
             telemetry.update();
-            sleep(150);
-            while (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle )
+            //sleep(150);
+
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  > angle ) )
             {
+                //counter++;
                 telemetry.update();
                 telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
                 telemetry.addData("turning (imu1 degrees)", formatAngle(angles1.angleUnit, angles1.firstAngle));
@@ -824,7 +836,7 @@ Bytes    16-bit word    Description
         waitForStart();
 
 
-        telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange_lb.getDistance(DistanceUnit.MM)));
+       // telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange_lb.getDistance(DistanceUnit.MM)));
 //        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
 //                (int) (colorSensor.green() * SCALE_FACTOR),
 //                (int) (colorSensor.blue() * SCALE_FACTOR),
@@ -850,12 +862,16 @@ Bytes    16-bit word    Description
 
 ////                new Thread(new TestThread()).start();
 //            strafe(1,-1,100);
+            telemetry.addData("initial angle", Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))));
+            sleep(5000);
+            telemetry.update();
             straight(1,-1,400);
             strafe(1,1,1197);
             OLDrotate(1, -1, 85);
-            strafe(1, -1, 600);  //16 inch = 133 * 16 (3/2)
+            telemetry.addData("test", imu.getAngularOrientation());
+            strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
             //left 2 in
-            straight(1,1,665);
+            straight(1,1,1055);
             telemetry.addData("Debug", "0");
             //
             telemetry.addData("Debug", "1");
@@ -864,7 +880,7 @@ Bytes    16-bit word    Description
                 straight(1, 1, 2128);
                 // 24 inch = 133*24*(3/2)
                 straight(1,1,2660);
-                OLDrotate(1,1,45);
+                OLDrotate(1,-1, 60 );
                 straight(1,-1,7000);
            //     straight(1,-1,1500);
                 telemetry.addData("sampling","middle");

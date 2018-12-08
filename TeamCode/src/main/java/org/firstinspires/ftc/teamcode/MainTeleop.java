@@ -8,6 +8,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.hardware.rev.Rev2mDistanceSensor;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
@@ -56,10 +57,9 @@ public class MainTeleop extends LinearOpMode {
     DcMotor armBottom;
     DcMotor armTop;
     DcMotor lift;
-    DcMotor receiver;
+    //DcMotor receiver;
 
     Servo grabServo;
-    double grabpos;
 
 
     BNO055IMU imu, imu1;
@@ -109,7 +109,7 @@ public class MainTeleop extends LinearOpMode {
         armBottom = hardwareMap.dcMotor.get("armBottom");
         armTop = hardwareMap.dcMotor.get("armTop");
         lift = hardwareMap.dcMotor.get("lift");
-        receiver = hardwareMap.dcMotor.get("receiver");
+        //receiver = hardwareMap.dcMotor.get("receiver");
 
         armBottom.setDirection(DcMotorSimple.Direction.REVERSE);
         armTop.setDirection(DcMotorSimple.Direction.REVERSE);
@@ -117,18 +117,16 @@ public class MainTeleop extends LinearOpMode {
         armTop.setMode(STOP_AND_RESET_ENCODER);
 
         lift.setDirection(DcMotorSimple.Direction.FORWARD);
-        receiver.setDirection(DcMotorSimple.Direction.REVERSE);
+        //receiver.setDirection(DcMotorSimple.Direction.REVERSE);
 
         armTop.setMode(RUN_WITHOUT_ENCODER);
         armBottom.setMode(RUN_WITHOUT_ENCODER);
         lift.setMode(RUN_WITHOUT_ENCODER);
-        receiver.setMode(RUN_WITHOUT_ENCODER);
+        //receiver.setMode(RUN_WITHOUT_ENCODER);
 
         grabServo = hardwareMap.servo.get("grab_servo");
 
 
-
-        grabpos = 0.55;
 
         angleToTurn = 30;
 
@@ -138,7 +136,6 @@ public class MainTeleop extends LinearOpMode {
         motorRightBack.setPower(driveSpeed);
         motorRightFront.setPower(driveSpeed);
 
-        grabServo.setPosition(grabpos);
 
 
     }
@@ -594,14 +591,20 @@ public class MainTeleop extends LinearOpMode {
 
 
             if (gamepad2.y) {
-                receiver.setPower(0.7);
+                telemetry.addData("grab position y", grabServo.getPosition() );
+
+                grabServo.setPosition(0.9);
             }
             if (gamepad2.x) {
-                receiver.setPower(0);
+                telemetry.addData("grab position x", grabServo.getPosition() );
+                grabServo.setPosition(0.5);
             }
             if (gamepad2.a) {
-                receiver.setPower(-0.7);
+                telemetry.addData("grab position a", grabServo.getPosition() );
+                grabServo.setPosition(0.1);
             }
+            telemetry.update();
+
             if (gamepad2.dpad_right) {
                 try {
                     turnTopArm(0.8, 1, 3*1440 * 70 / 360);

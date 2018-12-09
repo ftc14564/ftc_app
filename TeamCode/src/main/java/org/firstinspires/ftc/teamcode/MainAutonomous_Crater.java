@@ -489,39 +489,39 @@ Bytes    16-bit word    Description
             }*/
             telemetry.addData("Position", motorLeftFront.getCurrentPosition());
             telemetry.update();
-            motorLeftFront.setPower(direction*.4*power);
-            motorRightBack.setPower(direction*.4*power);
-            motorRightFront.setPower(direction*.4*power);
-            motorLeftBack.setPower(direction*.4*power);
-            if (Math.abs(motorLeftFront.getCurrentPosition()) < .1 * Math.abs(distance)){
+            motorLeftFront.setPower(direction*.5*power);
+            motorRightBack.setPower(direction*.5*power);
+            motorRightFront.setPower(direction*.5*power);
+            motorLeftBack.setPower(direction*.5*power);
+            if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*power);
                 motorRightBack.setPower(direction*power);
                 motorRightFront.setPower(direction*power);
                 motorLeftBack.setPower(direction*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .3 * Math.abs(distance)) {
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .95 * Math.abs(distance)) {
                 motorLeftFront.setPower(direction*.9*power);
                 motorRightBack.setPower(direction*.9*power);
                 motorRightFront.setPower(direction*.9*power);
                 motorLeftBack.setPower(direction*.9*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .7 * Math.abs(distance)){
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .96 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.8*power);
                 motorRightBack.setPower(direction*.8*power);
                 motorRightFront.setPower(direction*.8*power);
                 motorLeftBack.setPower(direction*.8*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .98 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.7*power);
+                motorRightBack.setPower(direction*.7*power);
+                motorRightFront.setPower(direction*.7*power);
+                motorLeftBack.setPower(direction*.7*power);
+            }
+            else{
                 motorLeftFront.setPower(direction*.5*power);
                 motorRightBack.setPower(direction*.5*power);
                 motorRightFront.setPower(direction*.5*power);
                 motorLeftBack.setPower(direction*.5*power);
-            }
-            else{
-                motorLeftFront.setPower(direction*.4*power);
-                motorRightBack.setPower(direction*.4*power);
-                motorRightFront.setPower(direction*.4*power);
-                motorLeftBack.setPower(direction*.4*power);
             }
         }
         stopWheels();
@@ -581,39 +581,39 @@ Bytes    16-bit word    Description
             }*/
             telemetry.addData("Position", motorLeftFront.getCurrentPosition());
             telemetry.update();
-            motorLeftFront.setPower(direction*.3*power);
-            motorRightBack.setPower(direction*.3*power);
-            motorRightFront.setPower(direction*.3*power);
-            motorLeftBack.setPower(direction*.3*power);
-            if (Math.abs(motorLeftFront.getCurrentPosition()) < .2 * Math.abs(distance)){
+            motorLeftFront.setPower(direction*.6*power);
+            motorRightBack.setPower(direction*.6*power);
+            motorRightFront.setPower(direction*.6*power);
+            motorLeftBack.setPower(direction*.6*power);
+            if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*power);
                 motorRightBack.setPower(direction*power);
                 motorRightFront.setPower(direction*power);
                 motorLeftBack.setPower(direction*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .5 * Math.abs(distance)) {
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .95 * Math.abs(distance)) {
+                motorLeftFront.setPower(direction*.9*power);
+                motorRightBack.setPower(direction*.9*power);
+                motorRightFront.setPower(direction*.9*power);
+                motorLeftBack.setPower(direction*.9*power);
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .96 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.85*power);
+                motorRightBack.setPower(direction*.85*power);
+                motorRightFront.setPower(direction*.85*power);
+                motorLeftBack.setPower(direction*.85*power);
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .98 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.8*power);
                 motorRightBack.setPower(direction*.8*power);
                 motorRightFront.setPower(direction*.8*power);
                 motorLeftBack.setPower(direction*.8*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .7 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.7*power);
-                motorRightBack.setPower(direction*.7*power);
-                motorRightFront.setPower(direction*.7*power);
-                motorLeftBack.setPower(direction*.7*power);
-            }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.6*power);
-                motorRightBack.setPower(direction*.6*power);
-                motorRightFront.setPower(direction*.6*power);
-                motorLeftBack.setPower(direction*.6*power);
-            }
             else{
-                motorLeftFront.setPower(direction*.4*power);
-                motorRightBack.setPower(direction*.4*power);
-                motorRightFront.setPower(direction*.4*power);
-                motorLeftBack.setPower(direction*.4*power);
+                motorLeftFront.setPower(direction*.5*power);
+                motorRightBack.setPower(direction*.5*power);
+                motorRightFront.setPower(direction*.5*power);
+                motorLeftBack.setPower(direction*.5*power);
             }
         }
         stopWheels();
@@ -660,20 +660,20 @@ Bytes    16-bit word    Description
             }
             lift.setPower(0);
 
-            straight(1,-1,400);
+            straight(0.7,-1,400);
             strafe(1,1,1197);
             OLDrotate(1, -1, 85);
-            strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
+            strafe(0.8, -1, 750);  //16 inch = 133 * 16 (3/2)
             //left 2 in
-            straight(1,1,1055);
+            straight(0.8,1,1055);
             telemetry.addData("Debug", "0");
             //
             telemetry.addData("Debug", "1");
             int wallStrafe=0;
-            sleep(500);
+            sleep(300);
             if (isPixyObjectSeen) {
-                straight(1, 1, 2128); // 24 inch = 133*24*(3/2)
-                straight(1,-1,1500);
+                straight(.5, 1, 1862); // 13 inch
+                straight(1,-1,1234);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch
             } else {
@@ -681,31 +681,28 @@ Bytes    16-bit word    Description
                 //right 14.5 in
                 strafe(1, 1, 2300);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
 
-                sleep(500);
+                sleep(300);
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen) {
-                    straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    straight(1, -1, 1500);
+                    straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
+                    straight(1, -1, 1234);
                     wallStrafe = 4988; // 25 inch
                 }
                 else {
                     //left 29 in
 
-                    strafe(1, -1, 5785); //29 inch = 133 * 29 * (3/2) = 5785.5
-                    straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    straight(1,-1,1500);
+                    strafe(1, -1, 5386); //27 inch = 133 * 29 * (3/2) = 5386.5
+                    straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
+                    straight(1,-1,1234);
                     telemetry.addData("Debug", "3");
-                    wallStrafe = 10973; // 55 inch
+                    wallStrafe = 10374; // 52 inch
 
                 }
             }
-            strafe(1, 1, wallStrafe);
-            OLDrotate(1, -1, 45);
-            OLDrotate(1, -1, 45);
-            OLDrotate(1, -1, 45);
+            strafe(1, 1, wallStrafe-520);
+            OLDrotate(1, 1, 20);
 
-            straight(1,-1,3000);
-
+            straight(1,1,3000);
 
 
         } catch (Exception e) {

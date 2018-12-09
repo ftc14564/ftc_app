@@ -593,7 +593,7 @@ public class MainTeleop extends LinearOpMode {
             if (gamepad2.y) {
                 telemetry.addData("grab position y", grabServo.getPosition() );
 
-                grabServo.setPosition(0.9);
+                grabServo.setPosition(1);
             }
             if (gamepad2.x) {
                 telemetry.addData("grab position x", grabServo.getPosition() );
@@ -601,7 +601,7 @@ public class MainTeleop extends LinearOpMode {
             }
             if (gamepad2.a) {
                 telemetry.addData("grab position a", grabServo.getPosition() );
-                grabServo.setPosition(0.1);
+                grabServo.setPosition(0);
             }
             telemetry.update();
 

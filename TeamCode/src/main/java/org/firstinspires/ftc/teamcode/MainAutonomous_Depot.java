@@ -92,13 +92,13 @@ public class MainAutonomous_Depot extends LinearOpMode {
     boolean strafing;
     boolean initDone=false;
 
-    double angleToTurn;
 
     I2cDeviceSynch pixy;
 
-    BNO055IMU imu, imu1;
-    Orientation angles, angles1;
+    BNO055IMU imu;
+    Orientation angles;
     Acceleration gravity, gravity1;
+    BNO055IMU.Parameters parameters;
 
     private static final String VUFORIA_KEY = "AYpOJ0H/////AAABGeEbm+5m+k5BrTnPlF3X9R177NGoUFUGl1kpgLa7MBwlsRdnD3IdxY7LmZ41NTQMASZ1MbCWaEpM4Sag7tDfQsJjqVvCwZr3qJm5y33J8rnMWz1ViOwwzZgnsSZqeGRY9+uPGa6cTMO/cxs+YF+4OqsD+iu4exeMCsxyAPYhXQrEIaW6h7zYVrdi9b5WsgNGUfP60Qz8U3szKTfVmaHmMFvc+iuJ1qmAM5AjlsBlc8MMHzLAL/3sf3UiCDe4tgo4mmYEsdl499QhqhhImEiKS8rTkap/53B8Hm89z3m5HuBoH4EKVUc65k2aCBg5c5jXVoZan8DkQFqSPnArwQnCHpaL/d1y79BRE44nJXj54E6V";
 
@@ -123,49 +123,15 @@ public class MainAutonomous_Depot extends LinearOpMode {
     VuforiaLocalizer vuforia = null;
     VuforiaLocalizer.Parameters Vu_parameters;
 
-    class TestThread implements Runnable{
-        @Override
-        public void run() {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE);
 
-            try {
-                strafe(1,1,2406);
-                OLDrotate(1,-1,90);
-                //left 2 in
-                telemetry.addData("Debug", "0");
-
-                strafe(1,-1,401);
-                telemetry.addData("Debug", "1");
-
-                //    sleep(2000);
-                //right 18 in
-                strafe(1,1,3609);
-                telemetry.addData("Debug", "2");
-
-                //left 36 in
-                //    sleep(2000);
-
-                strafe(1,-1,7218);
-                telemetry.addData("Debug", "3");
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-            telemetry.addData("Test: Thread done ","");
-
-        }
-
-    };
-
-
-    class InitThread implements Runnable{
+    class InitThread_Depot implements Runnable{
         @Override
         public void run() {
             try {
 
                 telemetry.addData("Init: Thread start ","");
 
-                BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+                parameters = new BNO055IMU.Parameters();
                 parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
                 parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
                 parameters.calibrationDataFile = "BNO055IMUCalibration.json"; // see the calibration sample opmode
@@ -178,153 +144,6 @@ public class MainAutonomous_Depot extends LinearOpMode {
                 // and named "imu".
                 imu = hardwareMap.get(BNO055IMU.class, "imu");
                 imu.initialize(parameters);
-                imu1 = hardwareMap.get(BNO055IMU.class, "imu_1");
-                imu1.initialize(parameters);
-
-                double a = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
-
-                telemetry.addData("initial angle", Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))));
-                telemetry.update();
-                sleep(5000);
-
-                /*
-                 * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
-                 * We can pass Vuforia the handle to a camera preview resource (on the RC phone);
-                 * If no camera monitor is desired, use the parameterless constructor instead (commented out below).
-                 */
-                int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-                Vu_parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
-
-                // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
-
-                Vu_parameters.vuforiaLicenseKey = VUFORIA_KEY ;
-                Vu_parameters.cameraDirection   = CAMERA_CHOICE;
-
-                //  Instantiate the Vuforia engine
-                if(vuforia == null)
-                    vuforia = ClassFactory.getInstance().createVuforia(Vu_parameters);
-
-                // Load the data sets that for the trackable objects. These particular data
-                // sets are stored in the 'assets' part of our application.
-                VuforiaTrackables targetsRoverRuckus = vuforia.loadTrackablesFromAsset("RoverRuckus");
-                VuforiaTrackable blueRover = targetsRoverRuckus.get(0);
-                blueRover.setName("Blue-Rover");
-                VuforiaTrackable redFootprint = targetsRoverRuckus.get(1);
-                redFootprint.setName("Red-Footprint");
-                VuforiaTrackable frontCraters = targetsRoverRuckus.get(2);
-                frontCraters.setName("Front-Craters");
-                VuforiaTrackable backSpace = targetsRoverRuckus.get(3);
-                backSpace.setName("Back-Space");
-
-                // For convenience, gather together all the trackable objects in one easily-iterable collection */
-                allTrackables = new ArrayList<VuforiaTrackable>();
-                allTrackables.addAll(targetsRoverRuckus);
-
-                /**
-                 * In order for localization to work, we need to tell the system where each target is on the field, and
-                 * where the phone resides on the robot.  These specifications are in the form of <em>transformation matrices.</em>
-                 * Transformation matrices are a central, important concept in the math here involved in localization.
-                 * See <a href="https://en.wikipedia.org/wiki/Transformation_matrix">Transformation Matrix</a>
-                 * for detailed information. Commonly, you'll encounter transformation matrices as instances
-                 * of the {@link OpenGLMatrix} class.
-                 *
-                 * If you are standing in the Red Alliance Station looking towards the center of the field,
-                 *     - The X axis runs from your left to the right. (positive from the center to the right)
-                 *     - The Y axis runs from the Red Alliance Station towards the other side of the field
-                 *       where the Blue Alliance Station is. (Positive is from the center, towards the BlueAlliance station)
-                 *     - The Z axis runs from the floor, upwards towards the ceiling.  (Positive is above the floor)
-                 *
-                 * This Rover Ruckus sample places a specific target in the middle of each perimeter wall.
-                 *
-                 * Before being transformed, each target image is conceptually located at the origin of the field's
-                 *  coordinate system (the center of the field), facing up.
-                 */
-
-                /**
-                 * To place the BlueRover target in the middle of the blue perimeter wall:
-                 * - First we rotate it 90 around the field's X axis to flip it upright.
-                 * - Then, we translate it along the Y axis to the blue perimeter wall.
-                 */
-                OpenGLMatrix blueRoverLocationOnField = OpenGLMatrix
-                        .translation(0, mmFTCFieldWidth, mmTargetHeight)
-                        .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, 0));
-                blueRover.setLocation(blueRoverLocationOnField);
-
-                /**
-                 * To place the RedFootprint target in the middle of the red perimeter wall:
-                 * - First we rotate it 90 around the field's X axis to flip it upright.
-                 * - Second, we rotate it 180 around the field's Z axis so the image is flat against the red perimeter wall
-                 *   and facing inwards to the center of the field.
-                 * - Then, we translate it along the negative Y axis to the red perimeter wall.
-                 */
-                OpenGLMatrix redFootprintLocationOnField = OpenGLMatrix
-                        .translation(0, -mmFTCFieldWidth, mmTargetHeight)
-                        .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, 180));
-                redFootprint.setLocation(redFootprintLocationOnField);
-
-                /**
-                 * To place the FrontCraters target in the middle of the front perimeter wall:
-                 * - First we rotate it 90 around the field's X axis to flip it upright.
-                 * - Second, we rotate it 90 around the field's Z axis so the image is flat against the front wall
-                 *   and facing inwards to the center of the field.
-                 * - Then, we translate it along the negative X axis to the front perimeter wall.
-                 */
-                OpenGLMatrix frontCratersLocationOnField = OpenGLMatrix
-                        .translation(-mmFTCFieldWidth, 0, mmTargetHeight)
-                        .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0 , 90));
-                frontCraters.setLocation(frontCratersLocationOnField);
-
-                /**
-                 * To place the BackSpace target in the middle of the back perimeter wall:
-                 * - First we rotate it 90 around the field's X axis to flip it upright.
-                 * - Second, we rotate it -90 around the field's Z axis so the image is flat against the back wall
-                 *   and facing inwards to the center of the field.
-                 * - Then, we translate it along the X axis to the back perimeter wall.
-                 */
-                OpenGLMatrix backSpaceLocationOnField = OpenGLMatrix
-                        .translation(mmFTCFieldWidth, 0, mmTargetHeight)
-                        .multiplied(Orientation.getRotationMatrix(EXTRINSIC, XYZ, DEGREES, 90, 0, -90));
-                backSpace.setLocation(backSpaceLocationOnField);
-
-                /**
-                 * Create a transformation matrix describing where the phone is on the robot.
-                 *
-                 * The coordinate frame for the robot looks the same as the field.
-                 * The robot's "forward" direction is facing out along X axis, with the LEFT side facing out along the Y axis.
-                 * Z is UP on the robot.  This equates to a bearing angle of Zero degrees.
-                 *
-                 * The phone starts out lying flat, with the screen facing Up and with the physical top of the phone
-                 * pointing to the LEFT side of the Robot.  It's very important when you test this code that the top of the
-                 * camera is pointing to the left side of the  robot.  The rotation angles don't work if you flip the phone.
-                 *
-                 * If using the rear (High Res) camera:
-                 * We need to rotate the camera around it's long axis to bring the rear camera forward.
-                 * This requires a negative 90 degree rotation on the Y axis
-                 *
-                 * If using the Front (Low Res) camera
-                 * We need to rotate the camera around it's long axis to bring the FRONT camera forward.
-                 * This requires a Positive 90 degree rotation on the Y axis
-                 *
-                 * Next, translate the camera lens to where it is on the robot.
-                 * In this example, it is centered (left to right), but 110 mm forward of the middle of the robot, and 200 mm above ground level.
-                 */
-
-                final int CAMERA_FORWARD_DISPLACEMENT  = 110;   // eg: Camera is 110 mm in front of robot center
-                final int CAMERA_VERTICAL_DISPLACEMENT = 200;   // eg: Camera is 200 mm above ground
-                final int CAMERA_LEFT_DISPLACEMENT     = 0;     // eg: Camera is ON the robot's center line
-
-                OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
-                        .translation(CAMERA_FORWARD_DISPLACEMENT, CAMERA_LEFT_DISPLACEMENT, CAMERA_VERTICAL_DISPLACEMENT)
-                        .multiplied(Orientation.getRotationMatrix(EXTRINSIC, YZX, DEGREES,
-                                CAMERA_CHOICE == FRONT ? 90 : -90, 0, 0));
-
-                /**  Let all the trackable listeners know where the phone is.  */
-                for (VuforiaTrackable trackable : allTrackables)
-                {
-                    ((VuforiaTrackableDefaultListener)trackable.getListener()).setPhoneInformation(phoneLocationOnRobot, Vu_parameters.cameraDirection);
-                }
-
-                targetsRoverRuckus.activate();
 
                 initDone=true;
 
@@ -477,9 +296,8 @@ Bytes    16-bit word    Description
 
 
 
-        grabpos = 0.55;
+        grabpos = 0.5;
 
-        angleToTurn = 30;
 
         double driveSpeed = 0;
         motorLeftBack.setPower(driveSpeed);
@@ -489,7 +307,7 @@ Bytes    16-bit word    Description
 
         grabServo.setPosition(grabpos);
 
-        new Thread(new InitThread()).start();
+        new Thread(new InitThread_Depot()).start();
 
         //leftServo.setPosition(leftpos);
         //rightServo.setPosition(rightServoPos);
@@ -527,6 +345,7 @@ Bytes    16-bit word    Description
     }
 
     public void OLDrotate (double power, int direction, double angle) {
+        imu.initialize(parameters);
         if(direction == -1.0 ){
             // LEFT
             //Clockwise
@@ -555,7 +374,6 @@ Bytes    16-bit word    Description
         motorRightFront.setMode(RUN_WITHOUT_ENCODER);
 
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-        angles1 = imu1.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
         telemetry.addData("Robot turning", "Yay!");
         telemetry.update();
@@ -565,8 +383,6 @@ Bytes    16-bit word    Description
 
         if(direction == 1)
         {
-            angle = angle + Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))));
-
             // RIGHT
             telemetry.addData("Robot turning right: ", angle);
             telemetry.update();
@@ -579,47 +395,40 @@ Bytes    16-bit word    Description
                 }*/
                 telemetry.update();
                 telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
-                telemetry.addData("turning (imu1 degrees)", formatAngle(angles1.angleUnit, angles1.firstAngle));
-                telemetry.addData("sum of gyros / 2", (((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))  + Double.parseDouble(formatAngle(angles1.angleUnit, angles1.firstAngle)) / 2));
                 telemetry.update();
 
 
-                double _power = 1.30*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+                double _power = 1.5*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
                 motorLeftFront.setPower(_power);
                 motorRightBack.setPower(_power);
                 motorRightFront.setPower(_power);
                 motorLeftBack.setPower(_power);
 
                 angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                angles1 = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
             }
             stopWheels();
         }
         else{
-            angle = Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))) - angle;
 
             // LEFT
             telemetry.addData("Robot turning left: ", angle);
             telemetry.update();
             //sleep(150);
 
-            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  > angle ) )
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
             {
-                //counter++;
                 telemetry.update();
                 telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
-                telemetry.addData("turning (imu1 degrees)", formatAngle(angles1.angleUnit, angles1.firstAngle));
                 telemetry.update();
 
-                double _power = 1.15*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+                double _power = 1.5*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
                 motorLeftFront.setPower(_power);
                 motorRightBack.setPower(_power);
                 motorRightFront.setPower(_power);
                 motorLeftBack.setPower(_power);
 
                 angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-                angles1 = imu1.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
             }
             stopWheels();
         }
@@ -678,39 +487,39 @@ Bytes    16-bit word    Description
             }*/
             telemetry.addData("Position", motorLeftFront.getCurrentPosition());
             telemetry.update();
-            motorLeftFront.setPower(direction*.2*power);
-            motorRightBack.setPower(direction*.2*power);
-            motorRightFront.setPower(direction*.2*power);
-            motorLeftBack.setPower(direction*.2*power);
-            if (Math.abs(motorLeftFront.getCurrentPosition()) < .05 * Math.abs(distance)){
+            motorLeftFront.setPower(direction*.4*power);
+            motorRightBack.setPower(direction*.4*power);
+            motorRightFront.setPower(direction*.4*power);
+            motorLeftBack.setPower(direction*.4*power);
+            if (Math.abs(motorLeftFront.getCurrentPosition()) < .1 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*power);
                 motorRightBack.setPower(direction*power);
                 motorRightFront.setPower(direction*power);
                 motorLeftBack.setPower(direction*power);
             }
             else if (Math.abs(motorLeftFront.getCurrentPosition()) < .3 * Math.abs(distance)) {
-                motorLeftFront.setPower(direction*.6*power);
-                motorRightBack.setPower(direction*.6*power);
-                motorRightFront.setPower(direction*.6*power);
-                motorLeftBack.setPower(direction*.6*power);
-            }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.55*power);
-                motorRightBack.setPower(direction*.55*power);
-                motorRightFront.setPower(direction*.55*power);
-                motorLeftBack.setPower(direction*.55*power);
+                motorLeftFront.setPower(direction*.9*power);
+                motorRightBack.setPower(direction*.9*power);
+                motorRightFront.setPower(direction*.9*power);
+                motorLeftBack.setPower(direction*.9*power);
             }
             else if (Math.abs(motorLeftFront.getCurrentPosition()) < .7 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.8*power);
+                motorRightBack.setPower(direction*.8*power);
+                motorRightFront.setPower(direction*.8*power);
+                motorLeftBack.setPower(direction*.8*power);
+            }
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.5*power);
                 motorRightBack.setPower(direction*.5*power);
                 motorRightFront.setPower(direction*.5*power);
                 motorLeftBack.setPower(direction*.5*power);
             }
             else{
-                motorLeftFront.setPower(direction*.2*power);
-                motorRightBack.setPower(direction*.2*power);
-                motorRightFront.setPower(direction*.2*power);
-                motorLeftBack.setPower(direction*.2*power);
+                motorLeftFront.setPower(direction*.4*power);
+                motorRightBack.setPower(direction*.4*power);
+                motorRightFront.setPower(direction*.4*power);
+                motorLeftBack.setPower(direction*.4*power);
             }
         }
         stopWheels();
@@ -774,7 +583,7 @@ Bytes    16-bit word    Description
             motorRightBack.setPower(direction*.3*power);
             motorRightFront.setPower(direction*.3*power);
             motorLeftBack.setPower(direction*.3*power);
-            if (Math.abs(motorLeftFront.getCurrentPosition()) < .05 * Math.abs(distance)){
+            if (Math.abs(motorLeftFront.getCurrentPosition()) < .2 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*power);
                 motorRightBack.setPower(direction*power);
                 motorRightFront.setPower(direction*power);
@@ -786,13 +595,13 @@ Bytes    16-bit word    Description
                 motorRightFront.setPower(direction*.8*power);
                 motorLeftBack.setPower(direction*.8*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .6 * Math.abs(distance)){
-                motorLeftFront.setPower(direction*.65*power);
-                motorRightBack.setPower(direction*.65*power);
-                motorRightFront.setPower(direction*.65*power);
-                motorLeftBack.setPower(direction*.65*power);
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .7 * Math.abs(distance)){
+                motorLeftFront.setPower(direction*.7*power);
+                motorRightBack.setPower(direction*.7*power);
+                motorRightFront.setPower(direction*.7*power);
+                motorLeftBack.setPower(direction*.7*power);
             }
-            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .8 * Math.abs(distance)){
+            else if (Math.abs(motorLeftFront.getCurrentPosition()) < .9 * Math.abs(distance)){
                 motorLeftFront.setPower(direction*.6*power);
                 motorRightBack.setPower(direction*.6*power);
                 motorRightFront.setPower(direction*.6*power);
@@ -836,148 +645,69 @@ Bytes    16-bit word    Description
         waitForStart();
 
 
-       // telemetry.addData("Distance 1", String.format("%.01f mm", sensorRange_lb.getDistance(DistanceUnit.MM)));
-//        Color.RGBToHSV((int) (colorSensor.red() * SCALE_FACTOR),
-//                (int) (colorSensor.green() * SCALE_FACTOR),
-//                (int) (colorSensor.blue() * SCALE_FACTOR),
-//                hsvValues);
-
-        // send the info back to driver station using telemetry function.
-//        telemetry.addData("Distance (cm)",
-//                String.format(Locale.US, "%.02f", colorDistance.getDistance(DistanceUnit.CM)));
-//        telemetry.addData("Alpha", colorSensor.alpha());
-//        telemetry.addData("Red  ", colorSensor.red());
-//        telemetry.addData("Green", colorSensor.green());
-//        telemetry.addData("Blue ", colorSensor.blue());
-//        telemetry.addData("Hue", hsvValues[0]);
 
 
         try {
 
-            //straight(1,1,500);
-            //back
-//            lift.setPower(-1);
-//            sleep(9000);
-//            lift.setPower(0);
+            lift.setMode(STOP_AND_RESET_ENCODER);
+            lift.setMode(RUN_WITHOUT_ENCODER);
+            lift.setDirection(DcMotorSimple.Direction.FORWARD);
+            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11*1440))
+            {
+                lift.setPower(1.0);
+            }
+            lift.setPower(0);
 
-////                new Thread(new TestThread()).start();
-//            strafe(1,-1,100);
-            telemetry.addData("initial angle", Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))));
-            sleep(5000);
-            telemetry.update();
             straight(1,-1,400);
             strafe(1,1,1197);
             OLDrotate(1, -1, 85);
-            telemetry.addData("test", imu.getAngularOrientation());
             strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
             //left 2 in
             straight(1,1,1055);
             telemetry.addData("Debug", "0");
             //
             telemetry.addData("Debug", "1");
+            int wallStrafe=0;
             sleep(500);
             if (isPixyObjectSeen) {
-                straight(1, 1, 2128);
-                // 24 inch = 133*24*(3/2)
-                straight(1,1,2660);
-                OLDrotate(1,-1, 60 );
-                straight(1,-1,7000);
-           //     straight(1,-1,1500);
-                telemetry.addData("sampling","middle");
-//                OLDrotate(1,-1,80);
-//                straight(1,-1,7182);
-//                OLDrotate(1,1,45);
-//                distanceToWall = sensorRange_lb.getDistance(DistanceUnit.CM);
-//                if(distanceToWall > 8){
-//                    double temp = distanceToWall-8;
-//                    strafe(1,1,199.5 * temp);
-//                    OLDrotate();
-//                }
-//                while(sensorRange_lb.getDistance() > 6){
-//                    strafe(1,1,);
-//                }
+                straight(1, 1, 2128); // 24 inch = 133*24*(3/2)
+                straight(1,-1,1500);
                 telemetry.addData("Debug", "object seen");
+                wallStrafe = 7980; // 40 inch
             } else {
 
                 //right 14.5 in
                 strafe(1, 1, 2300);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
-//                straight(1, 1, 2128); //2.5 inch = 133 * 2.5 * (3/2)
-//                straight(1, -1, 2128);
+
                 sleep(500);
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen) {
                     straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    OLDrotate(1,-1,5);
-                    straight(1,1,3200);
-                    OLDrotate(1,1,50);
-                    straight(1, -1, 7200);
-//                    OLDrotate(1, -1, 90);
-//                    straight(1, 1, 9975);
-//                    OLDrotate(1,1,45);
+                    straight(1, -1, 1500);
+                    wallStrafe = 4988; // 25 inch
                 }
                 else {
                     //left 29 in
 
-                    strafe(1, -1, 4700); //29 inch = 133 * 29 * (3/2) = 5785.5
+                    strafe(1, -1, 5785); //29 inch = 133 * 29 * (3/2) = 5785.5
                     straight(1, 1, 2128); // 6 inch = 133*6*(3/2)
-                    OLDrotate(1,1,5);
-                    straight(1,-1,3200);
-                    OLDrotate(1,1,45);
-                    straight(1,-1,7200);
-//                    OLDrotate(1,-1,90);
-//                    straight(1,1,4389);
-//                    OLDrotate(1,1,45);
+                    straight(1,-1,1500);
                     telemetry.addData("Debug", "3");
+                    wallStrafe = 10973; // 55 inch
+
                 }
             }
+            strafe(1, 1, wallStrafe);
+            OLDrotate(1, 1, 45);
+            straight(1,-1,3000);
+
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
 
-        if (initDone) {
 
-
-            targetVisible = false;
-            for (VuforiaTrackable trackable : allTrackables) {
-                if (((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible()) {
-                    telemetry.addData("Visible Target", trackable.getName());
-                    targetVisible = true;
-
-                    // getUpdatedRobotLocation() will return null if no new information is available since
-                    // the last time that call was made, or if the trackable is not currently visible.
-                    OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
-                    if (robotLocationTransform != null) {
-                        lastLocation = robotLocationTransform;
-                    }
-                    break;
-                }
-            }
-
-            // Provide feedback as to where the robot is located (if we know).
-            if (targetVisible) {
-                // express position (translation) of robot in inches.
-                VectorF translation = lastLocation.getTranslation();
-                telemetry.addData("Pos (in)", "{X, Y, Z} = %.1f, %.1f, %.1f",
-                        translation.get(0) / mmPerInch, translation.get(1) / mmPerInch, translation.get(2) / mmPerInch);
-
-                // express the rotation of the robot in degrees.
-                Orientation rotation = Orientation.getOrientation(lastLocation, EXTRINSIC, XYZ, DEGREES);
-                telemetry.addData("Rot (deg)", "{Roll, Pitch, Heading} = %.0f, %.0f, %.0f", rotation.firstAngle, rotation.secondAngle, rotation.thirdAngle);
-            } else {
-                telemetry.addData("Visible Target", "none");
-            }
-
-
-            telemetry.addData("pixyCounter", pixyCounter);
-
-//                telemetry.addData("Right Front Power", motorRightFront.getPower());
-//                telemetry.addData("Right Back Power", motorRightBack.getPower());
-//                telemetry.addData("Left Front Power", motorLeftFront.getPower());
-//                telemetry.addData("Left Back Power", motorLeftBack.getPower());
-
-        }
         telemetry.update();
 
         opModeActive = false;

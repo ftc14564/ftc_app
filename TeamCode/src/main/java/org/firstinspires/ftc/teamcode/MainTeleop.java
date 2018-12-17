@@ -706,6 +706,21 @@ public class MainTeleop extends LinearOpMode {
 
             telemetry.update();
         }
+        //stop all motors
+        grabServo.setPosition(0.5);
+        armBottom.setPower(0);
+        armTop.setPower(0);
+        motorLeftBack.setPower(0);
+        motorLeftFront.setPower(0);
+        motorRightBack.setPower(0);
+        motorRightFront.setPower(0);
+        lift.setPower(0);
+
+
+
+
+
+
     }
 
 

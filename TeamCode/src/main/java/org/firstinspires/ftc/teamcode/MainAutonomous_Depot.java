@@ -671,7 +671,7 @@ Bytes    16-bit word    Description
             sleep(300);
             if (isPixyObjectSeen) {
                 straight(.5, 1, 1862); // 13 inch
-                straight(1,-1,1234);
+                straight(1,-1,1400);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch
             } else {
@@ -683,23 +683,25 @@ Bytes    16-bit word    Description
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen) {
                     straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
-                    straight(1, -1, 1234);
+                    straight(1, -1, 1400);
                     wallStrafe = 4988; // 25 inch
                 }
                 else {
                     //left 29 in
 
-                    strafe(1, -1, 5386); //27 inch = 133 * 29 * (3/2) = 5386.5
-                    straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
-                    straight(1,-1,1234);
-                    telemetry.addData("Debug", "3");
-                    wallStrafe = 10374; // 52 inch
+                        strafe(1, -1, 5186); //27 inch = 133 * 29 * (3/2) = 5386.5
+                    if (isPixyObjectSeen) {
+                        straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
+                        straight(1, -1, 1550);
+                        telemetry.addData("Debug", "3");
+                    }
+                    wallStrafe = 10174; // 52 inch
 
                 }
             }
             strafe(1, 1, wallStrafe-520);
-            OLDrotate(1, 1, 35);
-            straight(1,-1,3000);
+            OLDrotate(1, 1, 45);
+            straight(1,-1,4000);
 
 
         } catch (Exception e) {
@@ -711,6 +713,15 @@ Bytes    16-bit word    Description
         telemetry.update();
 
         opModeActive = false;
+        //stop all motors
+        grabServo.setPosition(0.5);
+        armBottom.setPower(0);
+        armTop.setPower(0);
+        motorLeftBack.setPower(0);
+        motorLeftFront.setPower(0);
+        motorRightBack.setPower(0);
+        motorRightFront.setPower(0);
+        lift.setPower(0);
 
     }
     public void turnTopArm_E(int degrees){

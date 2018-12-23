@@ -649,59 +649,94 @@ Bytes    16-bit word    Description
 
         try {
 
-            lift.setMode(STOP_AND_RESET_ENCODER);
-            lift.setMode(RUN_WITHOUT_ENCODER);
-            lift.setDirection(DcMotorSimple.Direction.FORWARD);
-            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11*1440))
-            {
-                lift.setPower(1.0);
-            }
-            lift.setPower(0);
+//            lift.setMode(STOP_AND_RESET_ENCODER);
+//            lift.setMode(RUN_WITHOUT_ENCODER);
+//            lift.setDirection(DcMotorSimple.Direction.FORWARD);
+//            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11*1440))
+//            {
+//                lift.setPower(1.0);
+//            }
+//            lift.setPower(0);
 
             straight(0.7,-1,400);
             strafe(1,1,1197);
             OLDrotate(1, -1, 85);
-            strafe(0.8, -1, 750);  //16 inch = 133 * 16 (3/2)
+            strafe(0.8, -1, 850);  //16 inch = 133 * 16 (3/2)
             //left 2 in
-            straight(0.8,1,1055);
+//            straight(0.8,1,1055);
+            straight(0.8,1,400);
             telemetry.addData("Debug", "0");
             //
-            telemetry.addData("Debug", "1");
-            int wallStrafe=0;
+            int wallStrafe = 0;
             sleep(300);
-            if (isPixyObjectSeen) {
-                straight(.5, 1, 1862); // 13 inch
-                straight(1,-1,1400);
+            if(isPixyObjectSeen){
+                straight(1, 1, 1862); // 13 inch
+                straight(1,1,3200);
+                straight(1,-1,200);
+                OLDrotate(1,-1,60);
+                OLDrotate(1,-1,61);
+                strafe(1,-1,2900);
+                straight(1,1,9600);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch
-            } else {
-
-                //right 14.5 in
-                strafe(1, 1, 2300);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
-
-                sleep(300);
-                telemetry.addData("Debug", "2");
-                if (isPixyObjectSeen) {
-                    straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
-                    straight(1, -1, 1400);
-                    wallStrafe = 4988; // 25 inch
+            }
+            else{
+                OLDrotate(1,1,38);
+                straight(1,1, 500);
+                if(isPixyObjectSeen){
+                    straight(1,1,1800);
+                    OLDrotate(1,-1,35);
+                    straight(1,1,1300);
+//                    straight(1, -1, 2300);
                 }
-                else {
-                    //left 29 in
-
-                        strafe(1, -1, 5186); //27 inch = 133 * 29 * (3/2) = 5386.5
-                    if (isPixyObjectSeen) {
-                        straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
-                        straight(1, -1, 1550);
-                        telemetry.addData("Debug", "3");
+                else{
+                    straight(1,-1,500);
+                    OLDrotate(1,-1,70);
+                    straight(1,1,500);
+                    if(isPixyObjectSeen){
+                        straight(1,1,1800);
                     }
-                    wallStrafe = 10174; // 52 inch
 
                 }
             }
-            strafe(1, 1, wallStrafe-520);
-            OLDrotate(1, 1, 45);
-            straight(1,-1,4000);
+            telemetry.addData("Debug", "1");
+            //int wallStrafe=0;
+//            sleep(300);
+
+
+//            if (isPixyObjectSeen) {
+//                straight(.5, 1, 1862); // 13 inch
+//                straight(1,-1,1400);
+//                telemetry.addData("Debug", "object seen");
+//                wallStrafe = 7980; // 40 inch
+//            } else {
+//
+//                //right 14.5 in
+//                strafe(1, 1, 2300);//14.5 inch = 133 * 14.5 * (3/2) = 2892.75
+//
+//                sleep(300);
+//                telemetry.addData("Debug", "2");
+//                if (isPixyObjectSeen) {
+//                    straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
+//                    straight(1, -1, 1400);
+//                    wallStrafe = 4988; // 25 inch
+//                }
+//                else {
+//                    //left 29 in
+//
+//                        strafe(1, -1, 5186); //27 inch = 133 * 29 * (3/2) = 5386.5
+//                    if (isPixyObjectSeen) {
+//                        straight(.5, 1, 1862); // 6 inch = 133*6*(3/2)
+//                        straight(1, -1, 1550);
+//                        telemetry.addData("Debug", "3");
+//                    }
+//                    wallStrafe = 10174; // 52 inch
+//
+//                }
+//            }
+//            strafe(1, 1, wallStrafe-520);
+//            OLDrotate(1, 1, 45);
+//            straight(1,-1,4000);
 
 
         } catch (Exception e) {

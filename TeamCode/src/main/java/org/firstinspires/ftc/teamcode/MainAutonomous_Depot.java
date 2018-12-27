@@ -673,10 +673,9 @@ Bytes    16-bit word    Description
                 straight(1, 1, 1862); // 13 inch
                 straight(1,1,3200);
                 straight(1,-1,200);
-//                OLDrotate(1,-1,60);
-//                OLDrotate(1,-1,61);
-                OLDrotate(1,-1,121);
-                strafe(1,-1,2650);
+                OLDrotate(1,-1,60);
+                OLDrotate(1,-1,61);
+                strafe(1,-1,2900);
                 straight(1,1,9600);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch

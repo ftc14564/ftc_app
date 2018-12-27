@@ -673,9 +673,10 @@ Bytes    16-bit word    Description
                 straight(1, 1, 1862); // 13 inch
                 straight(1,1,3200);
                 straight(1,-1,200);
-                OLDrotate(1,-1,60);
-                OLDrotate(1,-1,61);
-                strafe(1,-1,2900);
+//                OLDrotate(1,-1,60);
+//                OLDrotate(1,-1,61);
+                OLDrotate(1,-1,121);
+                strafe(1,-1,2650);
                 straight(1,1,9600);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch
@@ -690,9 +691,12 @@ Bytes    16-bit word    Description
                     straight(1,1,2200);
                     OLDrotate(1,-1,37);
                     straight(1,1,3000);
-                    OLDrotate(1,1,38);
-                    OLDrotate(1,1,38);
-                    straight(1,-1,10500);
+//                    OLDrotate(1,1,37);
+//                    OLDrotate(1,1,38);
+                    OLDrotate(1,1,97);
+                    straight(1,-1,5075);
+                    strafe(1,1,500);
+                    straight(1,-1,5075);
 //                    straight(1, -1, 2300);
                 }
                 else{
@@ -702,7 +706,7 @@ Bytes    16-bit word    Description
                     sleep(100);
                     if(isPixyObjectSeen){
                         straight(1,1,2500);
-                        OLDrotate(1,1,39);
+                        OLDrotate(1,1,32);
                         straight(1,1,3000);
                         straight(1,-1,9500);
                     }

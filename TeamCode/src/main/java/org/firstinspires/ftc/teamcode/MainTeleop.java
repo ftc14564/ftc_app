@@ -60,6 +60,7 @@ public class MainTeleop extends LinearOpMode {
     //DcMotor receiver;
 
     Servo grabServo;
+    Servo grabBase;
 
 
     BNO055IMU imu, imu1;
@@ -125,6 +126,7 @@ public class MainTeleop extends LinearOpMode {
         //receiver.setMode(RUN_WITHOUT_ENCODER);
 
         grabServo = hardwareMap.servo.get("grab_servo");
+        grabBase = hardwareMap.servo.get("grab_base");
 
 
 
@@ -603,6 +605,9 @@ public class MainTeleop extends LinearOpMode {
                 telemetry.addData("grab position a", grabServo.getPosition() );
                 grabServo.setPosition(0);
             }
+                grabBase.setPosition(gamepad2.right_stick_y/2 + 0.5);
+
+
             telemetry.update();
 
             if (gamepad2.dpad_right) {

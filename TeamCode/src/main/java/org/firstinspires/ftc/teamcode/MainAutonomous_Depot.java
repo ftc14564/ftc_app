@@ -60,15 +60,18 @@ public class MainAutonomous_Depot extends LinearOpMode {
 
     private DistanceSensor sensorRange_rf;
     private DistanceSensor sensorRange_rb;
+    private DistanceSensor sensorRange_lf;
     private DistanceSensor sensorRange_lb;
 
     double distanceToWall;
 
     Rev2mDistanceSensor distanceSensor_rf;
     Rev2mDistanceSensor distanceSensor_rb;
+    Rev2mDistanceSensor distanceSensor_lf;
     Rev2mDistanceSensor distanceSensor_lb;
 
-//    private ColorSensor colorSensor;
+
+    //    private ColorSensor colorSensor;
 //    private DistanceSensor colorDistance;
     float hsvValues[] = {0F, 0F, 0F};
 
@@ -314,10 +317,12 @@ Bytes    16-bit word    Description
 
         sensorRange_rf = hardwareMap.get(DistanceSensor.class, "2m_rf");
         distanceSensor_rf = (Rev2mDistanceSensor)sensorRange_rf;
-        sensorRange_rb = hardwareMap.get(DistanceSensor.class, "2m_rf");
-        distanceSensor_rb = (Rev2mDistanceSensor)sensorRange_rf;
-        sensorRange_lb = hardwareMap.get(DistanceSensor.class, "2m_rf");
-        distanceSensor_lb = (Rev2mDistanceSensor)sensorRange_rf;
+        sensorRange_rb = hardwareMap.get(DistanceSensor.class, "2m_rb");
+        distanceSensor_rb = (Rev2mDistanceSensor)sensorRange_rb;
+        sensorRange_lf = hardwareMap.get(DistanceSensor.class, "2m_lf");
+        distanceSensor_lf = (Rev2mDistanceSensor)sensorRange_lf;
+        sensorRange_lb = hardwareMap.get(DistanceSensor.class, "2m_lb");
+        distanceSensor_lb = (Rev2mDistanceSensor)sensorRange_lb;
 //        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
 //        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
 
@@ -537,6 +542,16 @@ Bytes    16-bit word    Description
 
     }
 
+
+    public void makeParallel(boolean clokwise, double distance, boolean rightSide)
+    {
+        if(clokwise)
+        {
+
+
+        }
+    }
+
     /* direction : +1 is right , -1 is left
        distance: in ticks
      */
@@ -572,7 +587,34 @@ Bytes    16-bit word    Description
         while (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorLeftFront.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorRightFront.getCurrentPosition()) < Math.abs(distance)
-                && Math.abs(motorRightBack.getCurrentPosition()) < Math.abs(distance) ) {
+                && Math.abs(motorRightBack.getCurrentPosition()) < Math.abs(distance)) {
+
+            if(direction == 1)
+            {
+                //going right
+                if(distanceSensor_rb.getDistance(DistanceUnit.CM) <= 2 &&
+                        distanceSensor_rf.getDistance(DistanceUnit.CM) > 2){
+                    makeParallel(true, 2, true);
+                }
+                if(distanceSensor_rb.getDistance(DistanceUnit.CM) > 2 &&
+                        distanceSensor_rf.getDistance(DistanceUnit.CM) <= 2){
+                    makeParallel(false, 2, true);
+                }
+
+            }
+            if(direction == -1)
+            {
+                //going left
+                if(distanceSensor_lb.getDistance(DistanceUnit.CM) <= 2 &&
+                        distanceSensor_lf.getDistance(DistanceUnit.CM) > 2){
+                    makeParallel(false,2 , false);
+                }
+                if(distanceSensor_lb.getDistance(DistanceUnit.CM) > 2 &&
+                        distanceSensor_lf.getDistance(DistanceUnit.CM) <= 2){
+                    makeParallel(true,2, false );
+                }
+
+            }
 
             /*if(System.currentTimeMillis()-startTime > 29500 ){
                 break;
@@ -673,10 +715,11 @@ Bytes    16-bit word    Description
                 straight(1, 1, 1862); // 13 inch
                 straight(1,1,3200);
                 straight(1,-1,200);
-                OLDrotate(1,-1,60);
-                OLDrotate(1,-1,61);
-                strafe(1,-1,2900);
-                straight(1,1,9600);
+                OLDrotate(1,1,29);
+//                OLDrotate(1,-1,60);
+//                OLDrotate(1,-1,61);
+                strafe(1,1,2800);
+                straight(1,-1,10000);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 7980; // 40 inch
             }
@@ -700,14 +743,17 @@ Bytes    16-bit word    Description
                 }
                 else{
                     straight(1,-1,650);
-                    OLDrotate(1,-1,45);
-                    straight(1,1,500);
+                    OLDrotate(1,-1,53);
+                    straight(1,1,800);
                     sleep(100);
                     if(isPixyObjectSeen){
-                        straight(1,1,2500);
+                        straight(1,1,2200);
                         OLDrotate(1,1,32);
                         straight(1,1,3000);
-                        straight(1,-1,9500);
+                        OLDrotate(1,1,13);
+                        straight(1,-1,4850);
+                        strafe(1,1,400);
+                        straight(1,-1,4850);
                     }
 
                 }

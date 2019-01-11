@@ -487,7 +487,7 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftBack.setPower(-1*sideways);
             }
             else
-            if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
+            if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
                 //right turn
                 motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);  //chnaged
                 motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
@@ -499,7 +499,7 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftBack.setPower(forward);
             }
             else
-            if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
+            if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
                 //left turn
                 motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);  //default
                 motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);  //default
@@ -605,7 +605,12 @@ public class MainTeleop extends LinearOpMode {
                 telemetry.addData("grab position a", grabServo.getPosition() );
                 grabServo.setPosition(0);
             }
-                grabBase.setPosition(gamepad2.right_stick_y/2 + 0.5);
+
+            if(gamepad2.right_stick_y > 0) {
+                grabBase.setPosition(1-gamepad2.right_stick_y);
+            }
+            else
+                grabBase.setPosition(0.95);
 
 
             telemetry.update();
@@ -706,9 +711,9 @@ public class MainTeleop extends LinearOpMode {
 //                telemetry.addData("Left Front Power", motorLeftFront.getPower());
 //                telemetry.addData("Left Back Power", motorLeftBack.getPower());
 
-            telemetry.addData("top %d", armTop.getCurrentPosition() );
-            telemetry.addData("bottom %d", armBottom.getCurrentPosition() );
-
+//            telemetry.addData("top %d", armTop.getCurrentPosition() );
+//            telemetry.addData("bottom %d", armBottom.getCurrentPosition() );
+            telemetry.addData("Encoder ticks: ", motorLeftBack.getCurrentPosition());
             telemetry.update();
         }
         //stop all motors

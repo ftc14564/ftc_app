@@ -351,6 +351,7 @@ Bytes    16-bit word    Description
 
     public void OLDrotate (double power, int direction, double angle) {
         imu.initialize(parameters);
+        power /= 1.5;
         if(direction == -1.0 ){
             // LEFT
             //Clockwise
@@ -452,6 +453,9 @@ Bytes    16-bit word    Description
         motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
         motorRightBack.setMode(STOP_AND_RESET_ENCODER);
         motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+
+        power /= 1.5;
+        distance /= 2.25;
 
 /*
         while(motorLeftFront.getCurrentPosition() != 0) {
@@ -562,7 +566,8 @@ Bytes    16-bit word    Description
         motorRightBack.setMode(STOP_AND_RESET_ENCODER);
         motorRightFront.setMode(STOP_AND_RESET_ENCODER);
 
-
+        power /=1.5;
+        distance /= 2.25;
 
         telemetry.addData("Strafe", "strafe");
         telemetry.update();

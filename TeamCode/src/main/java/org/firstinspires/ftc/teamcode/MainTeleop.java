@@ -570,10 +570,10 @@ public class MainTeleop extends LinearOpMode {
 
             if(gamepad2.left_stick_y>0)
             {
-                lift.setPower(-1);
+                lift.setPower(1);
             }
             else if(gamepad2.left_stick_y<0){
-                lift.setPower(1);
+                lift.setPower(-1);
             }
             else{
                 lift.setPower(0);
@@ -615,47 +615,47 @@ public class MainTeleop extends LinearOpMode {
 
             telemetry.update();
 
-            if (gamepad2.dpad_right) {
-                try {
-                    turnTopArm(0.8, 1, 3*1440 * 70 / 360);
-                    turnBottomArm(0.5, -1, 3 * 1440 * 70 / (360));
-                    turnTopArm(0.4, 1, 3*1440 * 40 / 360);
-                    turnBottomArm(0.3, -1, 3 * 1440 * 20 / (360));
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                }
-
-            }
-            if (gamepad2.dpad_up) {
-                try {
-                    turnTopArm(0.8, 1, 3*1440 * 20 / 360);
-                    turnBottomArm(0.8, 1, 3 * 1440 * 95 / (360));
-                    turnTopArm(0.6, -1, 3*1440 * 10 / 360);
-
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-            if (gamepad2.dpad_down) {
-                try {
-                    turnTopArm(0.4, -1, 3*1440 * 40 / 360);
-                    turnBottomArm(0.4, -1, 3 * 1440 * 50 / (360));
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-            if (gamepad2.dpad_left) {
-                try {
-                    turnTopArm(0.3, -1, 3*1440 * 50 / 360);
-                    turnBottomArm(0.3, 1, 3 * 1440 * 50 / (360));
-                }
-                catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
+//            if (gamepad2.dpad_right) {
+//                try {
+//                    turnTopArm(0.8, 1, 3*1440 * 70 / 360);
+//                    turnBottomArm(0.5, -1, 3 * 1440 * 70 / (360));
+//                    turnTopArm(0.4, 1, 3*1440 * 40 / 360);
+//                    turnBottomArm(0.3, -1, 3 * 1440 * 20 / (360));
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//
+//            }
+//            if (gamepad2.dpad_up) {
+//                try {
+//                    turnTopArm(0.8, 1, 3*1440 * 20 / 360);
+//                    turnBottomArm(0.8, 1, 3 * 1440 * 95 / (360));
+//                    turnTopArm(0.6, -1, 3*1440 * 10 / 360);
+//
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
+//            if (gamepad2.dpad_down) {
+//                try {
+//                    turnTopArm(0.4, -1, 3*1440 * 40 / 360);
+//                    turnBottomArm(0.4, -1, 3 * 1440 * 50 / (360));
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
+//            if (gamepad2.dpad_left) {
+//                try {
+//                    turnTopArm(0.3, -1, 3*1440 * 50 / 360);
+//                    turnBottomArm(0.3, 1, 3 * 1440 * 50 / (360));
+//                }
+//                catch (Exception e){
+//                    e.printStackTrace();
+//                }
+//            }
 
 //            if (gamepad1.right_trigger > 0.05) {
 //                try {
@@ -713,7 +713,7 @@ public class MainTeleop extends LinearOpMode {
 
 //            telemetry.addData("top %d", armTop.getCurrentPosition() );
 //            telemetry.addData("bottom %d", armBottom.getCurrentPosition() );
-            telemetry.addData("Encoder ticks: ", motorLeftBack.getCurrentPosition());
+            telemetry.addData("Encoder ticks: ", lift.getCurrentPosition());
             telemetry.update();
         }
         //stop all motors

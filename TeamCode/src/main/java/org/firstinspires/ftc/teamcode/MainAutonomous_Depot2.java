@@ -731,7 +731,9 @@ Bytes    16-bit word    Description
 //        }
 
         try {
-
+            boolean right = true;
+            boolean center = false;
+            boolean left = false;
 //            lift.setMode(STOP_AND_RESET_ENCODER);
 //            lift.setMode(RUN_WITHOUT_ENCODER);
 //            lift.setDirection(DcMotorSimple.Direction.FORWARD);
@@ -753,14 +755,19 @@ Bytes    16-bit word    Description
             int wallStrafe = 0;
             //sleep before checking for pixy so camera has time to process information
             sleep(200);
-            if(isPixyObjectSeen){
-                straight(0.6, 1, 2250); // 13 inch
-                straight(0.6,-1,88.88);
-                OLDrotate(0.5,1,29);
+            if(right){
+                strafe(1,1,1440); // 13 inch
+                straight(1,1,900);
+                straight(1,-1,300);
 //                OLDrotate(1,-1,60);
 //                OLDrotate(1,-1,61);
-                strafe(0.6,1,1244.44);
-                straight(0.6,-1,4444.44);
+                strafe(0.6,1,3600);
+                makeParallel();
+                straight(1,-1,2880);
+                makeParallel();
+                straight(1,-1,1600);
+                makeParallel();
+                straight(1,-1,1600);
                 telemetry.addData("Debug", "object seen");
                 wallStrafe = 3546; // 40 inch
             }

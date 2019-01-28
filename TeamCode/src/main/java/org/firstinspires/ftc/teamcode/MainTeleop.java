@@ -71,6 +71,7 @@ public class MainTeleop extends LinearOpMode {
     float track = 0;
     boolean strafing;
     boolean initDone=false;
+    double power_multiplier;
 
     double angleToTurn;
 
@@ -127,6 +128,8 @@ public class MainTeleop extends LinearOpMode {
 
         grabServo = hardwareMap.servo.get("grab_servo");
         grabBase = hardwareMap.servo.get("grab_base");
+
+        power_multiplier = 1;
 
 
 
@@ -481,10 +484,10 @@ public class MainTeleop extends LinearOpMode {
                 motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);  //default
                 motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed for strafe
 
-                motorRightFront.setPower(-1*sideways);
-                motorRightBack.setPower(-1*sideways);
-                motorLeftFront.setPower(-1*sideways);
-                motorLeftBack.setPower(-1*sideways);
+                motorRightFront.setPower(-1*sideways*power_multiplier);
+                motorRightBack.setPower(-1*sideways*power_multiplier);
+                motorLeftFront.setPower(-1*sideways*power_multiplier);
+                motorLeftBack.setPower(-1*sideways*power_multiplier);
             }
             else
             if (gamepad1.left_bumper && Math.abs(forward) > 0.1) {
@@ -493,10 +496,10 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);   //changed
                 motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE); //default
                 motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);  //default
-                motorRightFront.setPower(forward);
-                motorRightBack.setPower(forward);
-                motorLeftFront.setPower(forward);
-                motorLeftBack.setPower(forward);
+                motorRightFront.setPower(forward*power_multiplier);
+                motorRightBack.setPower(forward*power_multiplier);
+                motorLeftFront.setPower(forward*power_multiplier);
+                motorLeftBack.setPower(forward*power_multiplier);
             }
             else
             if (gamepad1.right_bumper && Math.abs(forward) > 0.1) {
@@ -505,10 +508,10 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);  //default
                 motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD); //changed
                 motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);  //changed
-                motorRightFront.setPower(forward);
-                motorRightBack.setPower(forward);
-                motorLeftFront.setPower(forward);
-                motorLeftBack.setPower(forward);
+                motorRightFront.setPower(forward*power_multiplier);
+                motorRightBack.setPower(forward*power_multiplier);
+                motorLeftFront.setPower(forward*power_multiplier);
+                motorLeftBack.setPower(forward*power_multiplier);
             }
             else
             if (Math.abs(forward) > 0.1) {
@@ -517,10 +520,10 @@ public class MainTeleop extends LinearOpMode {
                 motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
                 motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
                 motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
-                motorRightFront.setPower(forward);
-                motorRightBack.setPower(forward);
-                motorLeftFront.setPower(forward);
-                motorLeftBack.setPower(forward);
+                motorRightFront.setPower(forward*power_multiplier);
+                motorRightBack.setPower(forward*power_multiplier);
+                motorLeftFront.setPower(forward*power_multiplier);
+                motorLeftBack.setPower(forward*power_multiplier);
             }
             else
             {
@@ -611,6 +614,14 @@ public class MainTeleop extends LinearOpMode {
             }
             else
                 grabBase.setPosition(0.95);
+
+            if (gamepad1.b) {
+                if (power_multiplier == 1)
+                    power_multiplier = 0.5;
+                else if (power_multiplier == 0.5)
+                    power_multiplier = 1;
+                sleep(200);
+            }
 
 
             telemetry.update();
@@ -714,6 +725,10 @@ public class MainTeleop extends LinearOpMode {
 //            telemetry.addData("top %d", armTop.getCurrentPosition() );
 //            telemetry.addData("bottom %d", armBottom.getCurrentPosition() );
             telemetry.addData("Encoder ticks: ", lift.getCurrentPosition());
+
+
+
+
             telemetry.update();
         }
         //stop all motors

@@ -266,8 +266,8 @@ Bytes    16-bit word    Description
                 //telemetry.addData("Byte 19", pixy.read8(19));
                 //telemetry.addData("Byte 20", pixy.read8(20));
                 //telemetry.addData("Byte 21", pixy.read8(21));
-               // telemetry.addData("pixyCounter", pixyCounter);
-               // telemetry.update();
+                // telemetry.addData("pixyCounter", pixyCounter);
+                // telemetry.update();
                 sleep(20);
 
 
@@ -379,7 +379,115 @@ Bytes    16-bit word    Description
     public String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
+    public void SlowerRotate (double power, int direction, double angle) {
 
+        //angle -=angle*.35;
+        power /= 3;
+
+        imu.initialize(parameters);
+        if(direction == -1.0 ){
+            // LEFT
+            //Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        }
+        else{
+            // RIGHT
+            //Counter Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        }
+
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        telemetry.addData("Robot turning", "Yay!");
+        telemetry.update();
+        //sleep(150);
+
+        int counter = 0;
+
+        if(direction == 1)
+        {
+
+            // RIGHT
+            telemetry.addData("Robot turning right: ", angle);
+            telemetry.update();
+            //sleep(150);
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++<50)
+            {
+                //counter++;
+                /*if(System.currentTimeMillis()-startTime > 29500 ){
+                    break;
+                }*/
+                telemetry.update();
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+
+                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+
+                // if(_power < 0.3) _power = 0.3;
+
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+            }
+            stopWheels();
+        }
+        else{
+
+            // LEFT
+            telemetry.addData("Robot turning left: ", angle);
+            telemetry.update();
+            //sleep(150);
+
+            while ((((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++ < 50)
+            {
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+                //  if(_power < 0.3) _power = 0.3;
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            }
+            stopWheels();
+
+        }
+        //stopRobot and change modes back to normal
+        telemetry.addData("turned (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+        telemetry.update();
+
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+    }
     public void OLDrotate (double power, int direction, double angle) {
 
         //angle -=angle*.35;
@@ -714,7 +822,7 @@ Bytes    16-bit word    Description
             telemetry.addData(" theta", theta);
             telemetry.update();
             if(theta > 5){
-                OLDrotate(.7,1,theta-5);
+                SlowerRotate(.7,1,theta-5);
             }
 
         }
@@ -724,10 +832,10 @@ Bytes    16-bit word    Description
             double diff2 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
             double diff3 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
             double diff = (diff1+diff2+diff3)/3;
-            double temp = diff/23;
+            double temp = diff/23.5;
             teta = Math.asin(temp) *180/3.141592;
             if(teta > 5){
-                OLDrotate(.7,-1,teta-5);
+                SlowerRotate(.7,-1,teta-5);
             }
             telemetry.addData(" lb_", distanceSensor_lb.getDistance(DistanceUnit.CM));
             telemetry.addData(" lf_", distanceSensor_lf.getDistance(DistanceUnit.CM));
@@ -789,7 +897,7 @@ Bytes    16-bit word    Description
 
             OLDrotate(1, -1, 76);
 
-   //         strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
+            //         strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
             //left 2 in
             straight(1,1,598.5); // 5.5 inch fwd
             telemetry.addData("Debug", "0");
@@ -811,7 +919,7 @@ Bytes    16-bit word    Description
                 straight(1, 1, 1330); // 13 inch
                 straight(1,-1,1300);
                 telemetry.addData("Debug", "object seen");
-                wallStrafe = 8578; // 43 inch
+                wallStrafe = 6578; // 43 inch
             } else {
                 straight(1, -1, 266);
                 strafe(1, 1, 2493);//13.5
@@ -825,7 +933,7 @@ Bytes    16-bit word    Description
                     straight(1, 1, 1330); // 8 inch
                     straight(1, -1, 1300);
 
-                    wallStrafe = 5885; // 29.5 inch
+                    wallStrafe = 3885; // 29.5 inch
                 }
                 else {
                     straight(1, -1, 399);
@@ -840,7 +948,7 @@ Bytes    16-bit word    Description
                         telemetry.addData("Debug", "3");
                     }
 
-                    wallStrafe = 10200; // 54.5 inch
+                    wallStrafe = 8200; // 54.5 inch
                 }
             }
             strafe(1, 1, wallStrafe );
@@ -945,7 +1053,7 @@ Bytes    16-bit word    Description
         //stopRobot and change modes back to normal
         armBottom.setMode(STOP_AND_RESET_ENCODER);
 
-       // sleep(100);
+        // sleep(100);
 
 
     }
@@ -993,7 +1101,7 @@ Bytes    16-bit word    Description
         //stopRobot and change modes back to normal
         armTop.setMode(STOP_AND_RESET_ENCODER);
 
-    //    sleep(100);
+        //    sleep(100);
 
 
     }

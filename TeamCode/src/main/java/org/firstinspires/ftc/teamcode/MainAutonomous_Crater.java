@@ -379,8 +379,116 @@ Bytes    16-bit word    Description
     public String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
+    public void SlowerRotate (double power, int direction, double angle) {
 
-    public void OLDrotate (double power, int direction, double angle) {
+        //angle -=angle*.35;
+        power /= 3;
+
+        imu.initialize(parameters);
+        if(direction == -1.0 ){
+            // LEFT
+            //Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        }
+        else{
+            // RIGHT
+            //Counter Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        }
+
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        telemetry.addData("Robot turning", "Yay!");
+        telemetry.update();
+        //sleep(150);
+
+        int counter = 0;
+
+        if(direction == 1)
+        {
+
+            // RIGHT
+            telemetry.addData("Robot turning right: ", angle);
+            telemetry.update();
+            //sleep(150);
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++<50)
+            {
+                //counter++;
+                /*if(System.currentTimeMillis()-startTime > 29500 ){
+                    break;
+                }*/
+                telemetry.update();
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+
+                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+
+                // if(_power < 0.3) _power = 0.3;
+
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+            }
+            stopWheels();
+        }
+        else{
+
+            // LEFT
+            telemetry.addData("Robot turning left: ", angle);
+            telemetry.update();
+            //sleep(150);
+
+            while ((((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++ < 50)
+            {
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+                //  if(_power < 0.3) _power = 0.3;
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            }
+            stopWheels();
+
+        }
+        //stopRobot and change modes back to normal
+        telemetry.addData("turned (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+        telemetry.update();
+
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+    }
+    public void Rotate (double power, int direction, double angle) {
 
         //angle -=angle*.35;
         power /= 3;
@@ -692,7 +800,7 @@ Bytes    16-bit word    Description
 
     }
 
-    public void makeParallel()
+    public void makeParallelLeft()
     {
         if(distanceSensor_lb.getDistance(DistanceUnit.CM) < (distanceSensor_lf.getDistance(DistanceUnit.CM)) ){
             double theta;
@@ -705,7 +813,7 @@ Bytes    16-bit word    Description
             double diff5 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
             double diff6 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
             double diff = (diff1+diff2+diff3 + diff4 + diff5 + diff6)/6;
-            double temp = diff/23.5;
+            double temp = diff/23;
             //telemetry.addData(" test ", 2);
             //telemetry.update();
             theta = Math.asin(temp) *180/3.141592;
@@ -714,7 +822,7 @@ Bytes    16-bit word    Description
             telemetry.addData(" theta", theta);
             telemetry.update();
             if(theta > 5){
-                OLDrotate(.7,1,theta-5);
+                SlowerRotate(1,1,theta);
             }
 
         }
@@ -727,7 +835,50 @@ Bytes    16-bit word    Description
             double temp = diff/23;
             teta = Math.asin(temp) *180/3.141592;
             if(teta > 5){
-                OLDrotate(.7,-1,teta-5);
+                SlowerRotate(1,-1,teta);
+            }
+            telemetry.addData(" lb_", distanceSensor_lb.getDistance(DistanceUnit.CM));
+            telemetry.addData(" lf_", distanceSensor_lf.getDistance(DistanceUnit.CM));
+            telemetry.addData(" theta_", teta);
+            telemetry.update();
+        }
+    }
+    public void makeParallelRight()
+    {
+        if(distanceSensor_rb.getDistance(DistanceUnit.CM) < (distanceSensor_rf.getDistance(DistanceUnit.CM)) ){
+            double theta;
+            //telemetry.addData(" test ", 1);
+
+            double diff1 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff2 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff3 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff4 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff5 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff6 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff = (diff1+diff2+diff3 + diff4 + diff5 + diff6)/6;
+            double temp = diff/27;
+            //telemetry.addData(" test ", 2);
+            //telemetry.update();
+            theta = Math.asin(temp) *180/3.141592;
+            telemetry.addData(" lb", distanceSensor_lb.getDistance(DistanceUnit.CM));
+            telemetry.addData(" lf", distanceSensor_lf.getDistance(DistanceUnit.CM));
+            telemetry.addData(" theta", theta);
+            telemetry.update();
+            if(theta > 5){
+                SlowerRotate(1,-1,theta);
+            }
+
+        }
+        else{
+            double teta;
+            double diff1 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
+            double diff2 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
+            double diff3 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
+            double diff = (diff1+diff2+diff3)/3;
+            double temp = diff/27;
+            teta = Math.asin(temp) *180/3.141592;
+            if(teta > 5){
+                SlowerRotate(1,1,teta);
             }
             telemetry.addData(" lb_", distanceSensor_lb.getDistance(DistanceUnit.CM));
             telemetry.addData(" lf_", distanceSensor_lf.getDistance(DistanceUnit.CM));
@@ -751,15 +902,15 @@ Bytes    16-bit word    Description
 
 //        int counter=0;
 //        while(counter++<100){
-//            OLDrotate(1, -1, 45);
+//            Rotate(1, -1, 45);
 //            sleep(1000);
-//            OLDrotate(1, -1, 45);
-//            sleep(1000);
-//
-//            OLDrotate(1, -1, 45);
+//            Rotate(1, -1, 45);
 //            sleep(1000);
 //
-//            OLDrotate(1, -1, 45);
+//            Rotate(1, -1, 45);
+//            sleep(1000);
+//
+//            Rotate(1, -1, 45);
 //            sleep(1000);
 //
 //        }
@@ -774,7 +925,7 @@ Bytes    16-bit word    Description
             lift.setMode(STOP_AND_RESET_ENCODER);
             lift.setMode(RUN_WITHOUT_ENCODER);
             lift.setDirection(DcMotorSimple.Direction.FORWARD);
-            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11*1120))
+            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11.25*1120))
             {
                 lift.setPower(-1.0);
             }
@@ -783,15 +934,15 @@ Bytes    16-bit word    Description
 
             grabBase.setPosition(0.95);
 
-            straight(1,-1,266);   // 2 inch fwd
+            straight(1,-1,332);   // 2.5 inch fwd
             strafe(1,1,1596);    // 8 inch left
-            straight(1,1,665);   // 5 inch back
+            straight(1,1,400);   // 4.25 inch back
 
-            OLDrotate(1, -1, 80);
+            Rotate(1, -1, 76);
 
             //         strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
             //left 2 in
-            straight(1,1,798); // 6 inch fwd
+            straight(1,1,598.5); // 5.5 inch fwd
             telemetry.addData("Debug", "0");
             //
             telemetry.addData("Debug", "1");
@@ -808,13 +959,25 @@ Bytes    16-bit word    Description
 
             sleep(300);
             if (isPixyObjectSeen) {
-                straight(1, 1, 1596); // 13 inch
-                straight(1,1,1200);
+                straight(1, 1, 1330); // 13 inch
+                straight(1,-1,1300);
                 telemetry.addData("Debug", "object seen");
-                wallStrafe = 8578; // 43 inch
+                wallStrafe = 6478; // 43 inch
+                strafe(1, 1, wallStrafe );
+                Rotate(1, 1, 40);
+                makeParallelLeft();
+                double dis1 = distanceSensor_lb.getDistance(DistanceUnit.CM);
+                double dis2 = distanceSensor_lf.getDistance(DistanceUnit.CM);
+                double dis = (dis1 + dis2)/2;
+                if(dis > 12){
+                    strafe(1,1,((dis-12)/2.54)*200);
+                }
+
+                straight(1,1,3200);
+                
             } else {
                 straight(1, -1, 266);
-                strafe(1, 1, 2693);//13.5
+                strafe(1, 1, 2493);//13.5
                 straight(1, 1, 266);
 
 
@@ -822,38 +985,53 @@ Bytes    16-bit word    Description
                 telemetry.addData("Debug", "2");
                 if (isPixyObjectSeen) {
 
-                    straight(1, 1, 1596); // 8 inch
-                    straight(1, 1, 1200);
+                    straight(1, 1, 1130); // 8 inch
+                    straight(1, -1, 1100);
 
-                    wallStrafe = 5885; // 29.5 inch
+                    wallStrafe = 4185; // 29.5 inch
+                    strafe(1, 1, wallStrafe );
+                    Rotate(1, 1, 40);
+                    makeParallelLeft();
+                    double dis1 = distanceSensor_lb.getDistance(DistanceUnit.CM);
+                    double dis2 = distanceSensor_lf.getDistance(DistanceUnit.CM);
+                    double dis = (dis1 + dis2)/2;
+                    if(dis > 12){
+                        strafe(1,1,((dis-12)/2.54)*200);
+                    }
+
+                    straight(1,1,3100);
+                    
                 }
                 else {
-                    straight(1, -1, 266);
+                    straight(1, -1, 399);
 
                     strafe(1, -1, 4987); //25
-                    straight(1, 1, 266);
+                    straight(1, 1, 500);
 
                     sleep(300);
                     if (isPixyObjectSeen) {
-                        straight(1, 1, 1596); // 6 inch = 133*6*(3/2)
-                        straight(1, 1, 1200);
+                        straight(1, 1, 1330); // 6 inch = 133*6*(3/2)
+                        straight(1, -1, 500);
                         telemetry.addData("Debug", "3");
                     }
 
-                    wallStrafe = 10885; // 54.5 inch
+                    wallStrafe = 5885; // 54.5 inch
+                    strafe(1, -1, wallStrafe );
+                    Rotate(1, -1, 40);
+                    makeParallelRight();
+                    double dis1 = distanceSensor_rb.getDistance(DistanceUnit.CM);
+                    double dis2 = distanceSensor_rf.getDistance(DistanceUnit.CM);
+                    double dis = (dis1 + dis2)/2;
+                    if(dis > 12){
+                        strafe(1,-1,((dis-12)/2.54)*200);
+                    }
+
+                    straight(1,1,4200);
                 }
             }
-//            strafe(1, 1, wallStrafe );
-//            OLDrotate(1, 1, 40);
-//            makeParallel();
-//            double dis1 = distanceSensor_lb.getDistance(DistanceUnit.CM);
-//            double dis2 = distanceSensor_lf.getDistance(DistanceUnit.CM);
-//            double dis = (dis1 + dis2)/2;
-//            if(dis > 8){
-//                strafe(1,1,((dis-7)/2.54)*200);
-//            }
-//
-//            straight(1,-1,3100);
+            
+           
+
 
 
         } catch (Exception e) {

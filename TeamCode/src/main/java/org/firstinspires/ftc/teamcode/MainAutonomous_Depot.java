@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode;
 
-import android.graphics.Color;
-import android.os.Process;
+import android.util.Log;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -15,10 +14,16 @@ import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.Range;
+import com.vuforia.CameraDevice;
+import com.vuforia.ObjectTracker;
+import com.vuforia.Tracker;
+import com.vuforia.TrackerManager;
+import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
+import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
-import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -27,10 +32,9 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
-import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackables;
+import org.firstinspires.ftc.robotcore.external.tfod.Recognition;
+import org.firstinspires.ftc.robotcore.external.tfod.TFObjectDetector;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -38,16 +42,11 @@ import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_TO_POSITION;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_USING_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.RUN_WITHOUT_ENCODER;
 import static com.qualcomm.robotcore.hardware.DcMotor.RunMode.STOP_AND_RESET_ENCODER;
-import static org.firstinspires.ftc.robotcore.external.navigation.AngleUnit.DEGREES;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.XYZ;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesOrder.YZX;
-import static org.firstinspires.ftc.robotcore.external.navigation.AxesReference.EXTRINSIC;
 import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.BACK;
-import static org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer.CameraDirection.FRONT;
 
 
-@Autonomous(name = "Auto_Depot")
-public class MainAutonomous_Depot extends LinearOpMode {
+@Autonomous(name = "Auto_Depot_cam")
+public class MainAutonomous_Depot_cam extends LinearOpMode {
 
     DcMotor motorRightFront;
     DcMotor motorRightBack;
@@ -74,7 +73,6 @@ public class MainAutonomous_Depot extends LinearOpMode {
     Rev2mDistanceSensor distanceSensor_lf;
     Rev2mDistanceSensor distanceSensor_lb;
 
-    ColorSensor sensorColor;
     // hsvValues is an array that will hold the hue, saturation, and value information.
     float hsvValues[] = {0F, 0F, 0F};
 
@@ -90,16 +88,14 @@ public class MainAutonomous_Depot extends LinearOpMode {
 
     int pixyCounter;
     boolean isPixyObjectSeen;
-    boolean opModeActive;
-
-
-
+    boolean pixyContinue = true;
 
 
     float power = 0;
     float track = 0;
     boolean strafing;
     boolean initDone=false;
+    boolean vuInitDone=false;
 
 
     I2cDeviceSynch pixy;
@@ -133,6 +129,18 @@ public class MainAutonomous_Depot extends LinearOpMode {
     VuforiaLocalizer.Parameters Vu_parameters;
 
 
+    private static final String TFOD_MODEL_ASSET = "RoverRuckus.tflite";
+    private static final String LABEL_GOLD_MINERAL = "Gold Mineral";
+    private static final String LABEL_SILVER_MINERAL = "Silver Mineral";
+
+
+    /**
+     * {@link #tfod} is the variable we will use to store our instance of the Tensor Flow Object
+     * Detection engine.
+     */
+    private TFObjectDetector tfod;
+
+
     class InitThread_Depot implements Runnable{
         @Override
         public void run() {
@@ -155,15 +163,21 @@ public class MainAutonomous_Depot extends LinearOpMode {
                 imu = hardwareMap.get(BNO055IMU.class, "imu");
                 imu.initialize(parameters);
 
-                sensorColor = hardwareMap.get(ColorSensor.class, "sensor_color");
+                // The TFObjectDetector uses the camera frames from the VuforiaLocalizer, so we create that
+                // first.
+                initVuforia();
 
-
-                initDone=true;
-
+                if (ClassFactory.getInstance().canCreateTFObjectDetector()) {
+                    initTfod();
+                } else {
+                    telemetry.addData("Sorry!", "This device is not compatible with TFOD");
+                }
+                vuInitDone = true;
             } catch (Exception e) {
                 e.printStackTrace();
             }
 
+            initDone=true;
             pixy = hardwareMap.i2cDeviceSynch.get("pixy");
 
 
@@ -181,8 +195,8 @@ public class MainAutonomous_Depot extends LinearOpMode {
             //initDone = true;
             telemetry.addData("Init: Thread done ","");
 
-            while(opModeActive){
-                           /*
+            while (pixyContinue) {
+                 /*
 Bytes    16-bit word    Description
         ----------------------------------------------------------------
         0, 1     y              sync: 0xaa55=normal object, 0xaa56=color code object
@@ -212,28 +226,30 @@ Bytes    16-bit word    Description
 //                pixy.write8(4,1);
 //                pixy.write8(5,1);
 
-                byte b = pixy.read8(0);
-//                telemetry.addData("Byte 0", b);
-                b = pixy.read8(1);
-//                telemetry.addData("Byte 1", b);
-                b = pixy.read8(2);
-//                telemetry.addData("Byte 2",b );
-                b = pixy.read8(3);
-//                telemetry.addData("Byte 3", b);
-                b = pixy.read8(4);
-//                telemetry.addData("Byte 4", b);
-                b = pixy.read8(5);
-//                telemetry.addData("Byte 5", b);
-                b = pixy.read8(6);
-//                telemetry.addData("Byte 6", b);
+                byte b0 = pixy.read8(0);
+                telemetry.addData("Byte 0", b0);
+                byte b1 = pixy.read8(1);
+                telemetry.addData("Byte 1", b1);
+                byte b2 = pixy.read8(2);
+                telemetry.addData("Byte 2", b2 );
+                byte b3 = pixy.read8(3);
+                telemetry.addData("Byte 3", b3);
+                byte b4 = pixy.read8(4);
+                telemetry.addData("Byte 4", b4);
+                byte b5 = pixy.read8(5);
+                telemetry.addData("Byte 5", b5);
+                byte b6 = pixy.read8(6);
+                telemetry.addData("Byte 6", b6);
+                telemetry.update();
+                if (b0!=0){
+                    if(pixyCounter < 10)
+                        pixyCounter+=4;
 
-                if (b!=0){
-                    if(pixyCounter < 5)
-                        pixyCounter+=2;
                 }
                 else{
                     if(pixyCounter>1)
-                        pixyCounter--;
+                    pixyCounter--;
+
                 }
 
                 if(pixyCounter >1){
@@ -244,8 +260,8 @@ Bytes    16-bit word    Description
                 }
 
 
-                b = pixy.read8(7);
-//                telemetry.addData("Byte 7", pixy.read8(7));
+                byte b = pixy.read8(7);
+//                telemetry.addData("Byte 7", b);
                 b = pixy.read8(8);
 //                telemetry.addData("Byte 8", pixy.read8(8));
                 b = pixy.read8(9);
@@ -266,29 +282,11 @@ Bytes    16-bit word    Description
                 //telemetry.addData("Byte 19", pixy.read8(19));
                 //telemetry.addData("Byte 20", pixy.read8(20));
                 //telemetry.addData("Byte 21", pixy.read8(21));
-                // telemetry.addData("pixyCounter", pixyCounter);
-                // telemetry.update();
+               // telemetry.addData("pixyCounter", pixyCounter);
+               // telemetry.update();
                 sleep(20);
 
 
-
-//                Color.RGBToHSV((int) (sensorColor.red() * SCALE_FACTOR),
-//                        (int) (sensorColor.green() * SCALE_FACTOR),
-//                        (int) (sensorColor.blue() * SCALE_FACTOR),
-//                        hsvValues);
-//
-//                // send the info back to driver station using telemetry function.
-//                telemetry.addData("Alpha", sensorColor.alpha());
-//                telemetry.addData("Red  ", sensorColor.red());
-//                telemetry.addData("Green", sensorColor.green());
-//                telemetry.addData("Blue ", sensorColor.blue());
-//                telemetry.addData("Hue", hsvValues[0]);
-//                telemetry.update();
-//
-//                if(hsvValues[0] < 90)
-//                    isPixyObjectSeen = true;
-//                else
-//                    isPixyObjectSeen = false;
             }
 
         }
@@ -341,11 +339,6 @@ Bytes    16-bit word    Description
 
         grabServo.setPosition(grabpos);
 
-        new Thread(new InitThread_Depot()).start();
-
-        //leftServo.setPosition(leftpos);
-        //rightServo.setPosition(rightServoPos);
-
         sensorRange_rf = hardwareMap.get(DistanceSensor.class, "2m_rf");
         distanceSensor_rf = (Rev2mDistanceSensor)sensorRange_rf;
         sensorRange_rb = hardwareMap.get(DistanceSensor.class, "2m_rb");
@@ -354,10 +347,8 @@ Bytes    16-bit word    Description
         distanceSensor_lf = (Rev2mDistanceSensor)sensorRange_lf;
         sensorRange_lb = hardwareMap.get(DistanceSensor.class, "2m_lb");
         distanceSensor_lb = (Rev2mDistanceSensor)sensorRange_lb;
-//        colorSensor = hardwareMap.get(ColorSensor.class, "sensor_color_distance");
-//        colorDistance = hardwareMap.get(DistanceSensor.class, "sensor_color_distance");
 
-
+        new Thread(new InitThread_Depot()).start();
     }
 
 
@@ -379,119 +370,106 @@ Bytes    16-bit word    Description
     public String formatDegrees(double degrees){
         return String.format(Locale.getDefault(), "%.1f", AngleUnit.DEGREES.normalize(degrees));
     }
-    public void SlowerRotate (double power, int direction, double angle) {
 
-        //angle -=angle*.35;
-        power /= 3;
+    double P_TURN_COEFF =-0.05;
+    double TURN_THRESHOLD = 1;
 
-        imu.initialize(parameters);
-        if(direction == -1.0 ){
-            // LEFT
-            //Clockwise
-            motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
-            motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
-            motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-            motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+    public void gyroTurnREV(double speed, double angle){
+
+        telemetry.addData("starting gyro turn","-----");
+        telemetry.update();
+
+        while(opModeIsActive() && !onTargetAngleREV(speed, angle, P_TURN_COEFF, 3)){
+            telemetry.update();
+            idle();
+            telemetry.addData("-->","inside while loop :-(");
+            telemetry.update();
+        }
+        //sleep(100);
+        while(opModeIsActive() && !onTargetAngleREV(speed, angle, P_TURN_COEFF/3, 1)){
+            telemetry.update();
+            idle();
+            telemetry.addData("-->","inside while loop :-(");
+            telemetry.update();
+        }
+
+        telemetry.addData("done with gyro turn","-----");
+        telemetry.update();
+    }
+    boolean onTargetAngleREV(double speed, double angle, double PCoeff, double turnThreshold){
+        double error;
+        double steer;
+        boolean onTarget = false;
+        double leftSpeed;
+        double rightSpeed;
+
+        //determine turm power based on error
+        error = getErrorREV(angle);
+
+        if (Math.abs(error) <= turnThreshold){
+
+            steer = 0.0;
+            leftSpeed = 0.0;
+            rightSpeed = 0.0;
+            onTarget = true;
+            stopWheels();
         }
         else{
-            // RIGHT
-            //Counter Clockwise
-            motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-            motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-            motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
-            motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+
+            steer = getSteerREV(error, PCoeff);
+            rightSpeed = speed * steer;
+            leftSpeed = -rightSpeed;
+            //leftSpeed = -5;
         }
 
-        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
-        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
-        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
-        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorLeftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        double weightConstant = 0.8;//this constant will depend on the robot. you need to test experimentally to see which is best
 
-        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
-        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
-        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
-        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+        while(Math.abs(weightConstant*leftSpeed)<0.2)
+            weightConstant*=1.5;
+
+        motorLeftFront.setPower(weightConstant*leftSpeed);
+        motorRightFront.setPower(weightConstant*rightSpeed);
+        motorLeftBack.setPower(weightConstant*leftSpeed);
+        motorRightBack.setPower(weightConstant*rightSpeed);
+
+        telemetry.addData("Target angle","%5.2f",angle);
+        telemetry.addData("Error/Steer", "%5.2f/%5.2f", error, steer);
+        telemetry.addData("speed", "%5.2f/%5.2f", leftSpeed, rightSpeed);
+
+        return onTarget;
+    }
+    public double getErrorREV(double targetAngle){
+
+        double robotError;
 
         angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
 
-        telemetry.addData("Robot turning", "Yay!");
-        telemetry.update();
-        //sleep(150);
+        robotError = targetAngle - angles.firstAngle;
+        //telemetry.addData("Zvalue","%5.2f",gyro.getIntegratedZValue());
+        //telemetry.update();
 
-        int counter = 0;
+        while(robotError > 180) robotError -= 360;
 
-        if(direction == 1)
-        {
+        while(robotError <= -180) robotError += 360;
 
-            // RIGHT
-            telemetry.addData("Robot turning right: ", angle);
-            telemetry.update();
-            //sleep(150);
-            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
-                    counter++<50)
-            {
-                //counter++;
-                /*if(System.currentTimeMillis()-startTime > 29500 ){
-                    break;
-                }*/
-                telemetry.update();
-                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
-                telemetry.update();
-
-
-                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
-
-                // if(_power < 0.3) _power = 0.3;
-
-                motorLeftFront.setPower(_power);
-                motorRightBack.setPower(_power);
-                motorRightFront.setPower(_power);
-                motorLeftBack.setPower(_power);
-
-                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-
-            }
-            stopWheels();
-        }
-        else{
-
-            // LEFT
-            telemetry.addData("Robot turning left: ", angle);
-            telemetry.update();
-            //sleep(150);
-
-            while ((((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
-                    counter++ < 50)
-            {
-                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
-                telemetry.update();
-
-                double _power = 1.1*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
-                //  if(_power < 0.3) _power = 0.3;
-                motorLeftFront.setPower(_power);
-                motorRightBack.setPower(_power);
-                motorRightFront.setPower(_power);
-                motorLeftBack.setPower(_power);
-
-                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
-            }
-            stopWheels();
-
-        }
-        //stopRobot and change modes back to normal
-        telemetry.addData("turned (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+        telemetry.addData("Robot Error","%5.2f",robotError);
         telemetry.update();
 
-        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
-        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
-        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
-        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        return robotError;
 
     }
-    public void OLDrotate (double power, int direction, double angle) {
+    public double getSteerREV(double error , double PCoeff){
+        return Range.clip(error * PCoeff, -1 , 1);
+    }
+
+    public void Rotate (double power, int direction, double angle) {
 
         //angle -=angle*.35;
-        power /= 3;
+        power /= 1.5;
 
         imu.initialize(parameters);
         if(direction == -1.0 ){
@@ -595,11 +573,120 @@ Bytes    16-bit word    Description
         motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
 
     }
+    public void SlowerRotate (double power, int direction, double angle) {
 
-    public void straight (double power, int direction, double distance) throws InterruptedException {
+        //angle -=angle*.35;
+        power /= 3;
+
+        imu.initialize(parameters);
+        if(direction == -1.0 ){
+            // LEFT
+            //Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+            motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+        }
+        else{
+            // RIGHT
+            //Counter Clockwise
+            motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightFront.setDirection(DcMotorSimple.Direction.FORWARD);
+            motorRightBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        }
+
+        motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
+        motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
+        motorRightBack.setMode(STOP_AND_RESET_ENCODER);
+        motorRightFront.setMode(STOP_AND_RESET_ENCODER);
+
+        motorLeftBack.setMode(RUN_WITHOUT_ENCODER);
+        motorLeftFront.setMode(RUN_WITHOUT_ENCODER);
+        motorRightBack.setMode(RUN_WITHOUT_ENCODER);
+        motorRightFront.setMode(RUN_WITHOUT_ENCODER);
+
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        telemetry.addData("Robot turning", "Yay!");
+        telemetry.update();
+        //sleep(150);
+
+        int counter = 0;
+
+        if(direction == 1)
+        {
+
+            // RIGHT
+            telemetry.addData("Robot turning right: ", angle);
+            telemetry.update();
+            //sleep(150);
+            while ((Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++<50)
+            {
+                //counter++;
+                /*if(System.currentTimeMillis()-startTime > 29500 ){
+                    break;
+                }*/
+                telemetry.update();
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+
+                double _power = 1.5*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+
+               // if(_power < 0.3) _power = 0.3;
+
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+            }
+            stopWheels();
+        }
+        else{
+
+            // LEFT
+            telemetry.addData("Robot turning left: ", angle);
+            telemetry.update();
+            //sleep(150);
+
+            while ((((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+                    counter++ < 50)
+            {
+                telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+                telemetry.update();
+
+                double _power = 1.5*power*((angle-Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle))))))/angle);
+              //  if(_power < 0.3) _power = 0.3;
+                motorLeftFront.setPower(_power);
+                motorRightBack.setPower(_power);
+                motorRightFront.setPower(_power);
+                motorLeftBack.setPower(_power);
+
+                angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+            }
+            stopWheels();
+
+        }
+        //stopRobot and change modes back to normal
+        telemetry.addData("turned (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
+        telemetry.update();
+
+        motorLeftFront.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
+        motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorRightBack.setDirection(DcMotorSimple.Direction.REVERSE);
+
+    }
+
+    public void straight (double power, int direction, double distance) {
 
         distance /= 2.25;
-        power /= 2;
+        power /= 1;
 
         motorLeftBack.setMode(STOP_AND_RESET_ENCODER);
         motorLeftFront.setMode(STOP_AND_RESET_ENCODER);
@@ -693,7 +780,7 @@ Bytes    16-bit word    Description
         //while (motorLeftFront.getCurrentPosition() != 0) {
         //waitOneFullHardwareCycle();
         //}
-        sleep(200);
+//        sleep(200);
 
 
     }
@@ -701,7 +788,7 @@ Bytes    16-bit word    Description
     /* direction : +1 is right , -1 is left
        distance: in ticks
      */
-    public void strafe (double power, int direction, double distance) throws InterruptedException {
+    public void strafe (double power, int direction, double distance)  {
 
         distance /= 2.25;
         power /= 1.5;
@@ -796,12 +883,31 @@ Bytes    16-bit word    Description
         motorRightFront.setDirection(DcMotorSimple.Direction.REVERSE);
         motorLeftBack.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        sleep(200);
+       // sleep(200);
 
     }
+    public void depositMarker(){
+        try{
+//            turnBottomArm(0.9, -1, 600);
+//            turnTopArm(0.9, 1, 600);
+//
+//            grabBase.setPosition(0.2);
+//            sleep(1000);
+//            grabBase.setPosition(0.7);
+//            turnTopArm(0.6, -1, 500);
+//            turnBottomArm(0.6, 1, 500);
 
-    public void makeParallel()
-    {
+            grabServo.setPosition(1);
+            sleep(1000);
+            grabServo.setPosition(0.5);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    public void makeParallelLeft()  {
+        double sensor_gap = 24;
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
         if(distanceSensor_lb.getDistance(DistanceUnit.CM) < (distanceSensor_lf.getDistance(DistanceUnit.CM)) ){
             double theta;
             //telemetry.addData(" test ", 1);
@@ -809,11 +915,8 @@ Bytes    16-bit word    Description
             double diff1 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
             double diff2 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
             double diff3 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
-            double diff4 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
-            double diff5 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
-            double diff6 = (distanceSensor_lf.getDistance(DistanceUnit.CM)) - (distanceSensor_lb.getDistance(DistanceUnit.CM));
-            double diff = (diff1+diff2+diff3 + diff4 + diff5 + diff6)/6;
-            double temp = diff/23.5;
+            double diff = (diff1+diff2+diff3 )/3;
+            double temp = diff/sensor_gap;
             //telemetry.addData(" test ", 2);
             //telemetry.update();
             theta = Math.asin(temp) *180/3.141592;
@@ -821,8 +924,8 @@ Bytes    16-bit word    Description
             telemetry.addData(" lf", distanceSensor_lf.getDistance(DistanceUnit.CM));
             telemetry.addData(" theta", theta);
             telemetry.update();
-            if(theta > 5){
-                SlowerRotate(.7,1,theta-5);
+            if(theta > 1){
+                gyroTurnREV(1, angles.firstAngle + theta);
             }
 
         }
@@ -832,15 +935,79 @@ Bytes    16-bit word    Description
             double diff2 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
             double diff3 = (distanceSensor_lb.getDistance(DistanceUnit.CM)) - (distanceSensor_lf.getDistance(DistanceUnit.CM));
             double diff = (diff1+diff2+diff3)/3;
-            double temp = diff/23.5;
+            double temp = diff/sensor_gap;
             teta = Math.asin(temp) *180/3.141592;
-            if(teta > 5){
-                SlowerRotate(.7,-1,teta-5);
+            if(teta > 1){
+                gyroTurnREV(1, angles.firstAngle - teta);
             }
             telemetry.addData(" lb_", distanceSensor_lb.getDistance(DistanceUnit.CM));
             telemetry.addData(" lf_", distanceSensor_lf.getDistance(DistanceUnit.CM));
             telemetry.addData(" theta_", teta);
             telemetry.update();
+        }
+
+        double dis = distanceSensor_lb.getDistance(DistanceUnit.CM);
+        if(dis < 13){
+            strafe(0.7,-1,200);
+        }
+        else if(dis > 16){
+            strafe(0.7,1,((dis-15)/2.54)*200);
+        }
+    }
+    public void makeParallelRight()
+    {
+
+        double sensor_gap = 26;
+        angles = imu.getAngularOrientation(AxesReference.INTRINSIC, AxesOrder.ZYX, AngleUnit.DEGREES);
+
+        if(distanceSensor_rb.getDistance(DistanceUnit.CM) < (distanceSensor_rf.getDistance(DistanceUnit.CM)) ){
+            double theta;
+            //telemetry.addData(" test ", 1);
+
+            double diff1 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff2 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff3 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff4 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff5 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff6 = (distanceSensor_rf.getDistance(DistanceUnit.CM)) - (distanceSensor_rb.getDistance(DistanceUnit.CM));
+            double diff = (diff1+diff2+diff3 + diff4 + diff5 + diff6)/6;
+            double temp = diff/sensor_gap;
+            //telemetry.addData(" test ", 2);
+            //telemetry.update();
+            theta = Math.asin(temp) *180/3.141592;
+            telemetry.addData(" lb", distanceSensor_lb.getDistance(DistanceUnit.CM));
+            telemetry.addData(" lf", distanceSensor_lf.getDistance(DistanceUnit.CM));
+            telemetry.addData(" theta", theta);
+            telemetry.update();
+            if(theta > 1){
+
+                gyroTurnREV(1, angles.firstAngle - theta);
+            }
+
+        }
+        else{
+            double teta;
+            double diff1 = (distanceSensor_rb.getDistance(DistanceUnit.CM)) - (distanceSensor_rf.getDistance(DistanceUnit.CM));
+            double diff2 = (distanceSensor_rb.getDistance(DistanceUnit.CM)) - (distanceSensor_rf.getDistance(DistanceUnit.CM));
+            double diff3 = (distanceSensor_rb.getDistance(DistanceUnit.CM)) - (distanceSensor_rf.getDistance(DistanceUnit.CM));
+            double diff = (diff1+diff2+diff3)/3;
+            double temp = diff/sensor_gap;
+            teta = Math.asin(temp) *180/3.141592;
+            if(teta > 1){
+                gyroTurnREV(1, angles.firstAngle + teta);
+            }
+            telemetry.addData(" rb_", distanceSensor_rb.getDistance(DistanceUnit.CM));
+            telemetry.addData(" rf_", distanceSensor_rf.getDistance(DistanceUnit.CM));
+            telemetry.addData(" theta_", teta);
+            telemetry.update();
+        }
+
+        double dis = distanceSensor_rb.getDistance(DistanceUnit.CM);
+        if(dis < 13){
+            strafe(0.7,1,200);
+        }
+        else if(dis > 16){
+            strafe(0.7,-1,((dis-15)/2.54)*200);
         }
     }
 
@@ -848,139 +1015,312 @@ Bytes    16-bit word    Description
     @Override
     public void runOpMode() {
 
+
+
+
         pixyCounter = 0;
-        isPixyObjectSeen = false;
-        opModeActive = true;
         initFn();
 
         waitForStart();
 
+        while(!initDone) sleep(100);
 
+
+//            int x = 0;
+//            x++;
+//            while (x == 1 && opModeIsActive()) {
+//                telemetry.addData("PixyObjSeen ", isPixyObjectSeen);
+//
+//                sleep(100);
+//            }
+
+//        int x=0;
+//        //makeParallelLeft();
+//        makeParallelRight();
+//        x++;
+//        if(x==1)
+//            return;
 
 //        int counter=0;
 //        while(counter++<100){
-//            OLDrotate(1, -1, 45);
-//            sleep(1000);
-//            OLDrotate(1, -1, 45);
-//            sleep(1000);
-//
-//            OLDrotate(1, -1, 45);
-//            sleep(1000);
-//
-//            OLDrotate(1, -1, 45);
+//            makeParallelLeftLeftLeft();
 //            sleep(1000);
 //
 //        }
 
 
-        try {
+            try {
+
+                boolean right = false;
+                boolean center = false;
+                boolean left = false;
 
 
+//            lift.setMode(STOP_AND_RESET_ENCODER);
+//            lift.setMode(RUN_WITHOUT_ENCODER);
+//            lift.setDirection(DcMotorSimple.Direction.FORWARD);
+//            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11*1440))
+//            {
+//                lift.setPower(1.0);
+//            }
+//            lift.setPower(0);
+                //unhooking
 
 
-
-            lift.setMode(STOP_AND_RESET_ENCODER);
-            lift.setMode(RUN_WITHOUT_ENCODER);
-            lift.setDirection(DcMotorSimple.Direction.FORWARD);
-            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11.25*1120))
-            {
-                lift.setPower(-1.0);
-            }
-            lift.setPower(0);
+                if (vuInitDone && tfod != null) {
+                    tfod.activate();
 
 
-            grabBase.setPosition(0.95);
+                    sleep(1000);
+                    List<Recognition> updatedRecognitions = tfod.getUpdatedRecognitions();
+                    if (updatedRecognitions != null) {
+                        telemetry.addData("# Object Detected", updatedRecognitions.size());
+                        if (updatedRecognitions.size() >= 0) {
+                            int goldMineralX = -1;
+                            for (Recognition recognition : updatedRecognitions) {
+                                if (recognition.getLabel().equals(LABEL_GOLD_MINERAL)) {
+                                    goldMineralX = (int) recognition.getLeft();
+                                    if (goldMineralX < 250) {
+                                        left = true;
+                                        telemetry.addData("From Cam : Left", "");
+                                    } else if (goldMineralX > 350) {
+                                        right = true;
+                                        telemetry.addData("From Cam : right", "");
+                                    } else {
+                                        center = true;
+                                        telemetry.addData("From Cam : center", "");
 
-            straight(1,-1,332);   // 2.5 inch fwd
-            strafe(1,1,1596);    // 8 inch left
-            straight(1,1,400);   // 4.25 inch back
+                                    }
+                                }
 
-            OLDrotate(1, -1, 76);
+                            }
 
-            //         strafe(1, -1, 750);  //16 inch = 133 * 16 (3/2)
-            //left 2 in
-            straight(1,1,598.5); // 5.5 inch fwd
-            telemetry.addData("Debug", "0");
-            //
-            telemetry.addData("Debug", "1");
-            int wallStrafe=0;
-//            turnTopArm(0.8, 1, 3*1440 * 70 / 360);
-//            turnBottomArm(0.5, -1, 3 * 1440 * 70 / (360));
-//            turnTopArm(0.4, 1, 3*1440 * 40 / 360);
-//            turnBottomArm(0.3, -1, 3 * 1440 * 20 / (360));
-//            grabBase.setPosition(0);
-//            sleep(500);
-//            grabBase.setPosition(0.95);
-
-
-
-            sleep(300);
-            if (isPixyObjectSeen) {
-                straight(1, 1, 1330); // 13 inch
-                straight(1,-1,1300);
-                telemetry.addData("Debug", "object seen");
-                wallStrafe = 6578; // 43 inch
-            } else {
-                straight(1, -1, 266);
-                strafe(1, 1, 2493);//13.5
-                straight(1, 1, 266);
-
-
-                sleep(300);
-                telemetry.addData("Debug", "2");
-                if (isPixyObjectSeen) {
-
-                    straight(1, 1, 1330); // 8 inch
-                    straight(1, -1, 1300);
-
-                    wallStrafe = 3885; // 29.5 inch
-                }
-                else {
-                    straight(1, -1, 399);
-
-                    strafe(1, -1, 4987); //25
-                    straight(1, 1, 100);
-
-                    sleep(300);
-                    if (isPixyObjectSeen) {
-                        straight(1, 1, 1330); // 6 inch = 133*6*(3/2)
-                        straight(1, -1, 1300);
-                        telemetry.addData("Debug", "3");
+                        }
                     }
-
-                    wallStrafe = 8200; // 54.5 inch
+                    stopVuforia();
                 }
+                telemetry.update();
+
+                if (left == true) {
+                    ProceedWithCam(0);
+
+                } else if (center == true) {
+                    ProceedWithCam(1);
+
+                } else if (right == true) {
+                    ProceedWithCam(2);
+
+                } else {
+                    ProccedWithPixy();
+                }
+
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            strafe(1, 1, wallStrafe );
-            OLDrotate(1, 1, 40);
-            makeParallel();
-            double dis1 = distanceSensor_lb.getDistance(DistanceUnit.CM);
-            double dis2 = distanceSensor_lf.getDistance(DistanceUnit.CM);
-            double dis = (dis1 + dis2)/2;
-            if(dis > 9){
-                strafe(1,1,((dis-9)/2.54)*200);
-            }
 
-            straight(1,-1,3100);
-
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-
-
-        telemetry.update();
-
-        opModeActive = false;
         //stop all motors
         grabServo.setPosition(0.5);
         armBottom.setPower(0);
         armTop.setPower(0);
         stopWheels();
         lift.setPower(0);
+        pixyContinue = false;
 
     }
+    void ProceedWithCam(int position){
+
+        telemetry.addData("ProceedWithCam", "");
+        telemetry.update();
+
+        try {
+
+
+            straight(1, -1, 332);   // 2.5 inch fwd
+            strafe(0.8, 1, 1800);    // 9 inch left
+            straight(1, 1, 450);   // 4.25 inch back
+
+            if (position == 0){
+                gyroTurnREV(1, -60);
+                straight(1, 1, 2926); // 22 inch
+                straight(1,-1,1600); // 12 inch back
+                gyroTurnREV(1, 0);
+
+                straight(1,-1,6916); // 52 inch fwd
+                gyroTurnREV(1, -45);
+                makeParallelLeft();
+                straight(1,-1,4200); //  inch fwd
+
+                depositMarker();
+                strafe(1,-1, 400);
+                gyroTurnREV(1, 135);
+                makeParallelRight();
+                straight(1,-1,9330); //  inch fwd
+
+            }
+            else if (position == 1){
+                gyroTurnREV(1, -90);
+                straight(1, 1, 2926); // 22 inch
+                straight(1,-1,1600); // 12 inch back
+                gyroTurnREV(1, 0);
+
+
+                straight(1,-1,4256); // 32 inch fwd
+                gyroTurnREV(1, -45);
+                makeParallelLeft();
+                straight(1,-1,4200); //  inch fwd
+
+
+                depositMarker();
+                strafe(1,-1, 400);
+                gyroTurnREV(1, 135);
+                makeParallelRight();
+                straight(1,-1,9330); //  inch fwd
+
+
+            }
+            else if (position == 2) {
+                gyroTurnREV(1, -120);
+                straight(1, 1, 2926); // 22 inch
+                straight(1,-1,1600); // 12 inch back
+                gyroTurnREV(1, 0);
+
+                straight(1,-1,5586); // 42 inch fwd
+                gyroTurnREV(1, -45);
+                makeParallelLeft();
+                straight(1,-1,4200); //  inch fwd
+
+                depositMarker();
+                strafe(1,-1, 400);
+                gyroTurnREV(1, 135);
+                makeParallelRight();
+                straight(1,-1,9330); //  inch fwd
+
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    void ProccedWithPixy() {
+
+        pixyCounter = 0;
+        isPixyObjectSeen = false;
+
+        telemetry.addData("ProceedWithPixy", "");
+        telemetry.update();
+
+        try {
+
+            straight(1, -1, 332);   // 2.5 inch fwd
+            strafe(0.8, 1, 2400);    // 12 inch left
+            straight(1, 1, 450);   // 4.25 inch back
+
+            //check middle
+            gyroTurnREV(1, -55);
+            sleep(1000);
+
+            telemetry.addData("PixyObjSeen ", isPixyObjectSeen);
+            telemetry.update();
+            if(isPixyObjectSeen)
+                System.out.println("pixyObjSeen A 1 ");
+            else
+                System.out.println("pixyObjSeen A 0 ");
+
+            if (isPixyObjectSeen) {
+                straight(1, 1, 2400); // 18 inch
+                straight(1, -1, 1200); // 9 inch back
+                gyroTurnREV(1, 0);
+
+                straight(1, -1, 6650); // 50 inch fwd
+                gyroTurnREV(1, -45);
+                makeParallelLeft();
+                straight(1, -1, 4200); //  inch fwd
+
+                depositMarker();
+                strafe(1, -1, 400);
+                gyroTurnREV(1, 135);
+                straight(1, -1, 6000); //  inch fwd
+                makeParallelRight();
+                straight(1, -1, 3500); //  inch fwd
+
+
+            } else {
+
+                gyroTurnREV(1, -90);
+
+                sleep(1000);
+                if(isPixyObjectSeen)
+                    System.out.println("pixyObjSeen B 1 ");
+                else
+                    System.out.println("pixyObjSeen B 0 ");
+
+                telemetry.addData("PixyObjSeen ", isPixyObjectSeen);
+                telemetry.update();
+                telemetry.addData("Debug", "2");
+                if (isPixyObjectSeen) {
+
+                    straight(1, 1, 1463); // 11 inch
+                    straight(1, -1, 1330); // 10 inch back
+                    gyroTurnREV(1, 0);
+
+                    straight(1, -1, 4788); // 36 inch fwd
+                    gyroTurnREV(1, -45);
+                    makeParallelLeft();
+                    straight(1, -1, 4200); //  inch fwd
+
+
+                    depositMarker();
+                    strafe(1, -1, 400);
+                    gyroTurnREV(1, 135);
+                    straight(1, -1, 6000); //  inch fwd
+                    makeParallelRight();
+                    straight(1, -1, 3500); //  inch fwd
+
+
+
+                } else {
+                    gyroTurnREV(1, -125);
+
+                    sleep(1000);
+                    if(isPixyObjectSeen)
+                        System.out.println("pixyObjSeen C 1 ");
+                    else
+                        System.out.println("pixyObjSeen C 0 ");
+
+                    telemetry.addData("PixyObjSeen ", isPixyObjectSeen);
+                    telemetry.update();
+                    if (isPixyObjectSeen) {
+                        straight(1, 1, 2400); // 18 inch
+                        straight(1, -1, 1200); // 9 inch back
+                        gyroTurnREV(1, 0);
+
+                        straight(1, -1, 5586); // 42 inch fwd
+                        gyroTurnREV(1, -45);
+                        makeParallelLeft();
+                        straight(1, -1, 4200); //  inch fwd
+
+                        depositMarker();
+                        strafe(1, -1, 400);
+                        gyroTurnREV(1, 135);
+                        straight(1, -1, 6000); //  inch fwd
+                        makeParallelRight();
+                        straight(1, -1, 3500); //  inch fwd
+
+                    }
+
+                }
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        telemetry.update();
+
+    }
+
+
     public void turnTopArm_E(int degrees){
 
         int ticks = 1440 * degrees / (360*4);
@@ -1009,7 +1349,7 @@ Bytes    16-bit word    Description
         armBottom.setMode(RUN_WITHOUT_ENCODER);
     }
 
-    public void turnBottomArm (double power, int direction, double distance) throws InterruptedException {
+    public void turnBottomArm (double power, int direction, double distance)  {
 
         armBottom.setMode(STOP_AND_RESET_ENCODER);
 
@@ -1053,11 +1393,11 @@ Bytes    16-bit word    Description
         //stopRobot and change modes back to normal
         armBottom.setMode(STOP_AND_RESET_ENCODER);
 
-        // sleep(100);
+       // sleep(100);
 
 
     }
-    public void turnTopArm (double power, int direction, double distance) throws InterruptedException {
+    public void turnTopArm (double power, int direction, double distance)  {
 
         armTop.setMode(STOP_AND_RESET_ENCODER);
 
@@ -1101,11 +1441,51 @@ Bytes    16-bit word    Description
         //stopRobot and change modes back to normal
         armTop.setMode(STOP_AND_RESET_ENCODER);
 
-        //    sleep(100);
+    //    sleep(100);
 
 
     }
 
+
+    /**
+     * Initialize the Vuforia localization engine.
+     */
+    private void initVuforia() {
+        /*
+         * Configure Vuforia by creating a Parameter object, and passing it to the Vuforia engine.
+         */
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        parameters.vuforiaLicenseKey = VUFORIA_KEY;
+        parameters.cameraName = hardwareMap.get(WebcamName.class, "Webcam 1");
+
+        //  Instantiate the Vuforia engine
+        vuforia = ClassFactory.getInstance().createVuforia(parameters);
+
+        // Loading trackables is not necessary for the Tensor Flow Object Detection engine.
+    }
+
+    /**
+     * Initialize the Tensor Flow Object Detection engine.
+     */
+    private void initTfod() {
+        int tfodMonitorViewId = hardwareMap.appContext.getResources().getIdentifier(
+                "tfodMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        TFObjectDetector.Parameters tfodParameters = new TFObjectDetector.Parameters(tfodMonitorViewId);
+        tfod = ClassFactory.getInstance().createTFObjectDetector(tfodParameters, vuforia);
+        tfod.loadModelFromAsset(TFOD_MODEL_ASSET, LABEL_GOLD_MINERAL, LABEL_SILVER_MINERAL);
+    }
+
+    private void stopVuforia() {
+        Tracker objectTracker = TrackerManager.getInstance().getTracker(ObjectTracker.getClassType());
+
+        if (objectTracker != null) {
+            objectTracker.stop();
+        }
+        tfod.deactivate();
+        CameraDevice.getInstance().stop();
+        CameraDevice.getInstance().deinit();
+    }
 }
 
 

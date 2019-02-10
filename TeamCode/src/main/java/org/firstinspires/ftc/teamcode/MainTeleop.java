@@ -609,11 +609,20 @@ public class MainTeleop extends LinearOpMode {
                 grabServo.setPosition(0);
             }
 
+            //normal servo
             if(gamepad2.right_stick_y > 0) {
                 grabBase.setPosition(1-gamepad2.right_stick_y);
             }
             else
-                grabBase.setPosition(0.95);
+                grabBase.setPosition(0.7);
+
+            //CR servo
+//            if(gamepad2.right_stick_y > 0.05) {
+//                grabBase.setPosition(1-gamepad2.right_stick_y);
+//            }
+//            else
+//                grabBase.setPosition(1);
+
 
             if (gamepad1.b) {
                 if (power_multiplier == 1)
@@ -621,6 +630,32 @@ public class MainTeleop extends LinearOpMode {
                 else if (power_multiplier == 0.5)
                     power_multiplier = 1;
                 sleep(200);
+            }
+
+            if (gamepad2.dpad_up) {
+                try{
+                    turnTopArm(0.6, 1, 500);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (gamepad2.dpad_down){
+                try{
+                    turnBottomArm(0.6, -1, 500);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (gamepad2.dpad_right) {
+                try{
+                    turnTopArm(0.6, 1, 700);
+                    turnBottomArm(0.6, -1, 600);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
             }
 
 
@@ -751,12 +786,12 @@ public class MainTeleop extends LinearOpMode {
 
     public void turnTopArm_E(int direction, int ticks){
 
-        armTop.setDirection(DcMotorSimple.Direction.REVERSE);
         armTop.setMode(RUN_USING_ENCODER);
         armTop.setMode(STOP_AND_RESET_ENCODER);
+        armTop.setDirection(DcMotorSimple.Direction.FORWARD);
         armTop.setMode(RUN_TO_POSITION);
         armTop.setTargetPosition(ticks);
-        armTop.setPower(direction * 0.3);
+        armTop.setPower(direction * 0.6);
         //while (armTop.getCurrentPosition()<ticks)
         sleep(1);
         armTop.setMode(RUN_WITHOUT_ENCODER);
@@ -770,7 +805,7 @@ public class MainTeleop extends LinearOpMode {
         armBottom.setMode(STOP_AND_RESET_ENCODER);
         armBottom.setMode(RUN_TO_POSITION);
         armBottom.setTargetPosition(ticks);
-        armBottom.setPower(direction* 0.3);
+        armBottom.setPower(direction* 0.6);
         //while(armBottom.getCurrentPosition()<ticks)
         sleep(1);
         armBottom.setMode(RUN_WITHOUT_ENCODER);

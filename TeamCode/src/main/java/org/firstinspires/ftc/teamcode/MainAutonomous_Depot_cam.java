@@ -191,7 +191,7 @@ public class MainAutonomous_Depot_cam extends LinearOpMode {
             //initDone = true;
             telemetry.addData("Init: Thread done ","");
 
-            while (pixyContinue) {
+            while (pixyContinue && !isStopRequested()) {
                  /*
 Bytes    16-bit word    Description
         ----------------------------------------------------------------
@@ -375,14 +375,14 @@ Bytes    16-bit word    Description
         telemetry.addData("starting gyro turn","-----");
         telemetry.update();
 
-        while(opModeIsActive() && !onTargetAngleREV(speed, angle, P_TURN_COEFF, 3)){
+        while(opModeIsActive() && !isStopRequested() && !onTargetAngleREV(speed, angle, P_TURN_COEFF, 3)){
             telemetry.update();
             idle();
             telemetry.addData("-->","inside while loop :-(");
             telemetry.update();
         }
         //sleep(100);
-        while(opModeIsActive() && !onTargetAngleREV(speed, angle, P_TURN_COEFF/3, 1)){
+        while(opModeIsActive() && !isStopRequested() && !onTargetAngleREV(speed, angle, P_TURN_COEFF/3, 1)){
             telemetry.update();
             idle();
             telemetry.addData("-->","inside while loop :-(");
@@ -424,7 +424,7 @@ Bytes    16-bit word    Description
         motorRightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         double weightConstant = 0.8;//this constant will depend on the robot. you need to test experimentally to see which is best
 
-        while(Math.abs(weightConstant*leftSpeed)<0.2)
+        while(opModeIsActive() && (Math.abs(weightConstant*leftSpeed)<0.2))
             weightConstant*=1.5;
 
         motorLeftFront.setPower(weightConstant*leftSpeed);
@@ -510,7 +510,7 @@ Bytes    16-bit word    Description
             telemetry.addData("Robot turning right: ", angle);
             telemetry.update();
             //sleep(150);
-            while (opModeIsActive() && (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
+            while (opModeIsActive() && !isStopRequested() && (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
             {
                 //counter++;
                 /*if(System.currentTimeMillis()-startTime > 29500 ){
@@ -542,7 +542,7 @@ Bytes    16-bit word    Description
             telemetry.update();
             //sleep(150);
 
-            while (opModeIsActive() && (((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
+            while (opModeIsActive() && !isStopRequested() && (((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) )
             {
                 telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
                 telemetry.update();
@@ -617,7 +617,7 @@ Bytes    16-bit word    Description
             telemetry.addData("Robot turning right: ", angle);
             telemetry.update();
             //sleep(150);
-            while (opModeIsActive() && (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+            while (opModeIsActive() && !isStopRequested() && (Math.abs(((Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
                     counter++<50)
             {
                 //counter++;
@@ -650,7 +650,7 @@ Bytes    16-bit word    Description
             telemetry.update();
             //sleep(150);
 
-            while (opModeIsActive() && (((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
+            while (opModeIsActive() && !isStopRequested() && (((Math.abs(Double.parseDouble(formatAngle(angles.angleUnit, angles.firstAngle)))))  < angle ) &&
                     counter++ < 50)
             {
                 telemetry.addData("turning (imu degrees)", formatAngle(angles.angleUnit, angles.firstAngle));
@@ -718,7 +718,7 @@ Bytes    16-bit word    Description
         telemetry.update();
 
 
-        while ( opModeIsActive() && (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
+        while ( opModeIsActive() && !isStopRequested() && (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorLeftFront.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorRightFront.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorRightBack.getCurrentPosition()) < Math.abs(distance) )) {
@@ -816,7 +816,7 @@ Bytes    16-bit word    Description
 
 
 
-        while (opModeIsActive() && (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
+        while (opModeIsActive() && !isStopRequested() && (Math.abs(motorLeftBack.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorLeftFront.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorRightFront.getCurrentPosition()) < Math.abs(distance)
                 && Math.abs(motorRightBack.getCurrentPosition()) < Math.abs(distance) )) {
@@ -1019,8 +1019,10 @@ Bytes    16-bit word    Description
 
         waitForStart();
 
-        while(!initDone && opModeIsActive()) sleep(100);
-
+        while(!initDone && opModeIsActive() && !isStopRequested()) sleep(100);
+        if(isStopRequested()){
+            return;
+        }
 
 //            int x = 0;
 //            x++;
@@ -1039,7 +1041,7 @@ Bytes    16-bit word    Description
 
 //        int counter=0;
 //        while(counter++<100){
-//            makeParallelLeftLeftLeft();
+//            makeParallelLeft();
 //            sleep(1000);
 //
 //        }
@@ -1052,15 +1054,15 @@ Bytes    16-bit word    Description
             boolean left = false;
 
 
-//            lift.setMode(STOP_AND_RESET_ENCODER);
-//            lift.setMode(RUN_WITHOUT_ENCODER);
-//            lift.setDirection(DcMotorSimple.Direction.FORWARD);
-//            while (Math.abs(lift.getCurrentPosition()) < Math.abs(11.25*1120))
-//            {
-//                lift.setPower(-1.0);
-//            }
-//            lift.setPower(0);
-//            //    unhooking
+            lift.setMode(STOP_AND_RESET_ENCODER);
+            lift.setMode(RUN_WITHOUT_ENCODER);
+            lift.setDirection(DcMotorSimple.Direction.FORWARD);
+           while (Math.abs(lift.getCurrentPosition()) < Math.abs(11.25*1120))
+            {
+                lift.setPower(-1.0);
+           }
+           lift.setPower(0);
+           //    unhooking
 
 
             if (vuInitDone && tfod != null) {
@@ -1392,7 +1394,7 @@ Bytes    16-bit word    Description
 
         int count = 0;
         while (Math.abs(armBottom.getCurrentPosition()) < Math.abs(distance)
-                && count++ <50 && opModeIsActive()) {
+                && count++ <50 && opModeIsActive() && !isStopRequested()) {
 
             telemetry.addData("armBottom Position", armBottom.getCurrentPosition());
             telemetry.update();
@@ -1440,7 +1442,7 @@ Bytes    16-bit word    Description
 
         int count =0;
         while (Math.abs(armTop.getCurrentPosition()) < Math.abs(distance)
-                && count++ < 30 && opModeIsActive()) {
+                && count++ < 30 && opModeIsActive() && !isStopRequested()) {
 
             telemetry.addData("armTop Position", armTop.getCurrentPosition());
             telemetry.update();
